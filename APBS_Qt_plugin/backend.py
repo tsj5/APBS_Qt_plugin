@@ -14,6 +14,7 @@ Citation for PDB2PQR:
 """
 import os
 import sys
+import logging
 import math
 import re
 import shlex
@@ -23,6 +24,8 @@ import textwrap
 import pymol
 
 import util
+
+_log = logging.getLogger(__name__)
 
 class PDB2PQRWrapper:
 
@@ -54,7 +57,7 @@ class PDB2PQRWrapper:
         f = open(filename, 'r')
         txt = f.read()
         f.close()
-        print(f"Erasing contents of {filename} in order to clean it up")
+        _log.info(f"Erasing contents of {filename} in order to clean it up")
         f = open(filename, 'w')
         # APBS accepts whitespace-delimited columns
         coordregex = r'([- 0-9]{4}\.[ 0-9]{3})'
@@ -84,7 +87,7 @@ class PDB2PQRWrapper:
         # First, generate a PDB file
         pdb_filename = self.pymol_generated_pdb_filename.getvalue()
         try:
-            print(f"Erasing contents of {pdb_filename} in order to generate new PDB file")
+            _log.info(f"Erasing contents of {pdb_filename} in order to generate new PDB file")
             f = open(pdb_filename, 'w')
             f.close()
         except:
@@ -108,20 +111,20 @@ class PDB2PQRWrapper:
         ]
         try:
             args = ' '.join(map(str, args))
-            print("args are now converted to string: ", args)
+            _log.info("args are now converted to string: ", args)
 #                retval = main.mainCommand(args)
             if 'PYMOL_GIT_MOD' in os.environ:
                 os.environ['PYTHONPATH'] = os.path.join(os.environ['PYMOL_GIT_MOD']) + ":" + os.path.join(os.environ['PYMOL_GIT_MOD'], "pdb2pqr")
             pymol_env = os.environ
             callfunc = subprocess.Popen(args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=pymol_env)
             child_stdout, child_stderr = callfunc.communicate()
-            print(child_stdout)
-            print(child_stderr)
+            _log.info(child_stdout)
+            _log.info(child_stderr)
             retval = callfunc.returncode
-            print("PDB2PQR's mainCommand returned", retval)
+            _log.info("PDB2PQR's mainCommand returned", retval)
         except Exception as exc:
-            print("Exception raised by main.mainCommand!")
-            print(sys.exc_info())
+            _log.warning("Exception raised by main.mainCommand!")
+            _log.warning(sys.exc_info())
             retval = 1
 
         if retval != 0:
@@ -133,15 +136,14 @@ class PDB2PQRWrapper:
         unassigned_atoms = self.get_unassigned_atoms(self.pymol_generated_pqr_filename.getvalue())
         if unassigned_atoms:
             pymol.cmd.select('unassigned', f"ID {unassigned_atoms}")
-            print("Unassigned atom IDs", unassigned_atoms)
+            _log.warning(f"Unassigned atom IDs: {unassigned_atoms}")
             raise util.PluginDialogException(f"Unable to assign parameters for the "
                 f"{len(unassigned_atoms.split('+'))} atoms in selection 'unassigned'.\n"
                 "Please either remove these unassigned atoms and re-start the calculation\n"
                 "or fix their parameters in the generated PQR file and run the calculation\n"
                 "using the modified PQR file (select 'Use another PQR' in 'Main')."
             )
-        if DEBUG:
-            print("I WILL RETURN TRUE from pdb2pqr")
+        _log.debug("I WILL RETURN TRUE from pdb2pqr")
 
     # PQR generation routines are required to call
     # cleanup_generated_file themselves.
@@ -172,8 +174,7 @@ class PDB2PQRWrapper:
         sel = f"(({sel}) or (neighbor ({sel}) and hydro))"
         pqr_filename = self.getPqrFilename()
         try:
-            if DEBUG:
-                print("Erasing previous contents of", pqr_filename)
+            _log.debug(f"Erasing previous contents of {pqr_filename}")
             f = open(pqr_filename, 'w')
             f.close()
         except Exception as exc:
@@ -219,18 +220,13 @@ class PDB2PQRWrapper:
         if self.radiobuttons.getvalue() == 'Use another PQR':
             pass
         elif self.radiobuttons.getvalue() == 'Use PDB2PQR':
-            if DEBUG:
-                print("GENERATING PQR FILE via PDB2PQR")
+            _log.debug("GENERATING PQR FILE via PDB2PQR")
             self._write_pdb2pqr_file()
-            if DEBUG:
-                print("GENERATED")
         else:
             # it's one of the pymol-generated options
-            if DEBUG:
-                print("GENERATING PQR FILE via PyMOL")
+            _log.debug("GENERATING PQR FILE via PyMOL")
             self._write_pymol_pqr_file()
-        if DEBUG:
-            print("GENERATED")
+        _log.debug("GENERATED")
 
 
 class PSizeWrapper:
@@ -261,7 +257,7 @@ class PSizeWrapper:
                 self.selection.getvalue(), self.selection.getvalue())
 
             if pymol.cmd.count_atoms(self.selection.getvalue() + " and not alt ''") != 0:
-                print("WARNING: You have alternate locations for some of your atoms!")
+                _log.warning("You have alternate locations for some of your atoms!")
             # pymol.cmd.save(pqr_filename,sel) # Pretty sure this was a bug. No need to write it when it's externally generated.
             f.close()
 
@@ -273,16 +269,14 @@ class PSizeWrapper:
             # could use procgrid for multiprocessors
             finegridpoints = size.getFineGridPoints()  # dime
             center = size.getCenter()  # cgcent and fgcent
-            print("APBS's psize.py was used to calculated grid dimensions")
+            _log.info("APBS's psize.py was used to calculated grid dimensions")
         except (util.NoPsizeException, ImportError, AttributeError) as e:
-            print(e)
-            print("This plugin was used to calculated grid dimensions")
+            _log.warning(e)
+            _log.info("This plugin was used to calculated grid dimensions")
             #
             # First, we need to get the dimensions of the molecule
-            #
-            # WLD
-            sel = "((%s) or (neighbor (%s) and hydro))" % (
-                self.selection.getvalue(), self.selection.getvalue())
+            sel = self.selection.getvalue()
+            sel = f"(({sel}) or (neighbor ({sel}) and hydro))"
             model = pymol.cmd.get_model(sel)
             mins = [None, None, None]
             maxs = [None, None, None]
@@ -340,11 +334,11 @@ class PSizeWrapper:
 
             finegridpoints = [mult_fac * c + 1 for c in cs]
 
-            print("cs", cs)
-            print("finedim", finedim)
-            print("nlev", nlev)
-            print("mult_fac", mult_fac)
-            print("finegridpoints", finegridpoints)
+            _log.info("cs: ", cs)
+            _log.info("finedim: ", finedim)
+            _log.info("nlev: ", nlev)
+            _log.info("mult_fac: ", mult_fac)
+            _log.info("finegridpoints: ", finegridpoints)
 
         except util.NoPDBException:
             raise util.PluginDialogException("Please set a temporary PDB file location.")
@@ -358,15 +352,15 @@ class PSizeWrapper:
             def gridofmem(mem):
                 return mem * 1024. * 1024. / 200.
             max_grid_points = gridofmem(max_mem_allowed)
-            print("Estimated memory usage", memofgrid(finegridpoints), 'MB out of maximum allowed', max_mem_allowed)
+            _log.info("Estimated memory usage", memofgrid(finegridpoints) 'MB out of maximum allowed', max_mem_allowed)
             if memofgrid(finegridpoints) > max_mem_allowed:
-                print("Maximum memory usage exceeded.  Old grid dimensions were", finegridpoints)
+                _log.warning("Maximum memory usage exceeded.  Old grid dimensions were", finegridpoints)
                 product = float(finegridpoints[0] * finegridpoints[1] * finegridpoints[2])
                 factor = pow(max_grid_points / product, 0.333333333)
                 finegridpoints[0] = (int(factor * finegridpoints[0] / 2)) * 2 + 1
                 finegridpoints[1] = (int(factor * finegridpoints[1] / 2)) * 2 + 1
                 finegridpoints[2] = (int(factor * finegridpoints[2] / 2)) * 2 + 1
-                print("Fine grid points rounded down from", finegridpoints)
+                _log.info("Fine grid points rounded down from", finegridpoints)
                 #
                 # Now we have to make sure that this still fits the equation n = c*2^(l+1) + 1.  Here, we'll
                 # just assume nlev == 4, which means that we need to be (some constant times 32) + 1.
@@ -398,20 +392,20 @@ class PSizeWrapper:
                     for i in 0, 1, 2:
                         # print finegridpoints[i],divmod(finegridpoints[i] - 1,32),
                         finegridpoints[i] = divmod(finegridpoints[i] - 1, 32)[0] * 32 + 1
-                print("New grid dimensions are", finegridpoints)
-        print(" APBS Tools: coarse grid: (%5.3f,%5.3f,%5.3f)" % tuple(coarsedim))
+                _log.info("New grid dimensions are", finegridpoints)
+        _log.info("\tcoarse grid: (%5.3f,%5.3f,%5.3f)" % tuple(coarsedim))
         self.grid_coarse_x.setvalue(coarsedim[0])
         self.grid_coarse_y.setvalue(coarsedim[1])
         self.grid_coarse_z.setvalue(coarsedim[2])
-        print(" APBS Tools: fine grid: (%5.3f,%5.3f,%5.3f)" % tuple(finedim))
+        _log.info("\tfine grid: (%5.3f,%5.3f,%5.3f)" % tuple(finedim))
         self.grid_fine_x.setvalue(finedim[0])
         self.grid_fine_y.setvalue(finedim[1])
         self.grid_fine_z.setvalue(finedim[2])
-        print(" APBS Tools: center: (%5.3f,%5.3f,%5.3f)" % tuple(center))
+        _log.info("\tcenter: (%5.3f,%5.3f,%5.3f)" % tuple(center))
         self.grid_center_x.setvalue(center[0])
         self.grid_center_y.setvalue(center[1])
         self.grid_center_z.setvalue(center[2])
-        print(" APBS Tools: fine grid points (%d,%d,%d)" % tuple(finegridpoints))
+        _log.info("\tfine grid points (%d,%d,%d)" % tuple(finegridpoints))
         self.grid_points_x.setvalue(finegridpoints[0])
         self.grid_points_y.setvalue(finegridpoints[1])
         self.grid_points_z.setvalue(finegridpoints[2])
@@ -616,16 +610,15 @@ class APBSWrapper:
                                             float(self.sdens.getvalue()),
                                             dx_filename,
                                             )
-        if DEBUG:
-            print("GOT THE APBS INPUT FILE")
+        _log.debug("GOT THE APBS INPUT FILE")
 
         # write out the input text
         try:
-            print("Erasing contents of", self.pymol_generated_in_filename.getvalue(), "in order to write new input file")
+            _log.info("Erasing contents of", self.pymol_generated_in_filename.getvalue(), "in order to write new input file")
             f = open(self.pymol_generated_in_filename.getvalue(), 'w')
             f.write(apbs_input_text)
             f.close()
         except IOError:
-            print("ERROR: Got the input file from APBS, but failed when trying to write to %s" % self.pymol_generated_in_filename.getvalue())
+            _log.info("ERROR: Got the input file from APBS, but failed when trying to write to %s" % self.pymol_generated_in_filename.getvalue())
 
 
