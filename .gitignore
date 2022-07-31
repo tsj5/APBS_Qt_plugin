@@ -127,3 +127,20 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Created by editors
+*~
+\#*
+\.\#*
+*.swp
+
+#Create by VSCode
+*.vscode*
+
+# mac os
+*.DS_Store
+Icon?
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints
