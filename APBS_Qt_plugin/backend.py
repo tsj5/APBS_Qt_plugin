@@ -14,6 +14,7 @@ Citation for PDB2PQR:
 """
 import os
 import sys
+import math
 import re
 import shlex
 import subprocess
@@ -80,14 +81,6 @@ class PDB2PQRWrapper:
         """Use pdb2pqr to generate a PQR file.
         Call this via the wrapper write_PQR_file()
         """
-        def show_error(message):
-            print("In show error 2")
-            error_dialog = Pmw.MessageDialog(self.parent,
-                                             title='Error',
-                                             message_text=message,
-                                             )
-            junk = error_dialog.activate()
-
         # First, generate a PDB file
         pdb_filename = self.pymol_generated_pdb_filename.getvalue()
         try:
@@ -95,15 +88,14 @@ class PDB2PQRWrapper:
             f = open(pdb_filename, 'w')
             f.close()
         except:
-            show_error('Please set a temporary PDB file location that you have permission to edit')
-            return False
-        # copied from WLD code
+            raise util.PluginDialogException("Please set a temporary PDB file location "
+                "that you have permission to edit")
+
         sel = "((%s) or (neighbor (%s) and hydro))" % (
             self.selection.getvalue(), self.selection.getvalue())
 
         apbs_clone = pymol.cmd.get_unused_name()
         pymol.cmd.create(apbs_clone,sel)
-
         self.fix_columns(apbs_clone)
         pymol.cmd.save(pdb_filename, apbs_clone)
         pymol.cmd.delete(apbs_clone)
@@ -115,73 +107,46 @@ class PDB2PQRWrapper:
                             self.pymol_generated_pqr_filename.getvalue(),
         ]
         try:
-            # This allows us to import pdb2pqr
-            # sys.path.append(os.path.dirname(os.path.dirname(self.pdb2pqr.getvalue())))
-            # print "Appended", os.path.dirname(os.path.dirname(self.pdb2pqr.getvalue()))
-            ###!!! Edited for Pymol-script-repo !!!###
-            # sys.path.append(os.path.join(os.environ['PYMOL_GIT_MOD'],"pdb2pqr"))
-            # print "Appended", os.path.join(os.environ['PYMOL_GIT_MOD'],"pdb2pqr")
-            ###!!!------------------------------!!!###
-            #import pdb2pqr.pdb2pqr
-            # This allows pdb2pqr to correctly find the dat directory with AMBER.DAT.
-            # sys.path.append(os.path.dirname(self.pdb2pqr.getvalue()))
-            # print "Appended", os.path.dirname(self.pdb2pqr.getvalue())
-            # print "Imported pdb2pqr"
-            # print "args are: ", args
-            #from pdb2pqr import main
-            # print "Imported main"
-            try:
-                ###!!! Edited for Pymol-script-repo !!!###
-                args = ' '.join(map(str, args))
-                print("args are now converted to string: ", args)
+            args = ' '.join(map(str, args))
+            print("args are now converted to string: ", args)
 #                retval = main.mainCommand(args)
-                if 'PYMOL_GIT_MOD' in os.environ:
-                    os.environ['PYTHONPATH'] = os.path.join(os.environ['PYMOL_GIT_MOD']) + ":" + os.path.join(os.environ['PYMOL_GIT_MOD'], "pdb2pqr")
-                pymol_env = os.environ
-                callfunc = subprocess.Popen(args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=pymol_env)
-                child_stdout, child_stderr = callfunc.communicate()
-                print(child_stdout)
-                print(child_stderr)
-                retval = callfunc.returncode
-                print("PDB2PQR's mainCommand returned", retval)
-#                if retval == 1:
-# retval = 0 # success condition is backwards in pdb2pqr
-#                elif retval == 0:
-# retval = 1 # success condition is backwards in pdb2pqr
-#                elif retval == None:
-# retval = 0 # When PDB2PQR does not explicitly
-# return anything, it's a success.
-###!!!-------------------------------!!!###
-            except:
-                print("Exception raised by main.mainCommand!")
-                print(sys.exc_info())
-                retval = 1
-        except:
-            print("Unexpected error encountered while trying to import pdb2pqr:", sys.exc_info())
-            retval = 1  # failure is nonzero here.
+            if 'PYMOL_GIT_MOD' in os.environ:
+                os.environ['PYTHONPATH'] = os.path.join(os.environ['PYMOL_GIT_MOD']) + ":" + os.path.join(os.environ['PYMOL_GIT_MOD'], "pdb2pqr")
+            pymol_env = os.environ
+            callfunc = subprocess.Popen(args, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=pymol_env)
+            child_stdout, child_stderr = callfunc.communicate()
+            print(child_stdout)
+            print(child_stderr)
+            retval = callfunc.returncode
+            print("PDB2PQR's mainCommand returned", retval)
+        except Exception as exc:
+            print("Exception raised by main.mainCommand!")
+            print(sys.exc_info())
+            retval = 1
 
         if retval != 0:
-            show_error('Could not run pdb2pqr: %s %s\n\nIt returned %s.\nCheck the PyMOL external GUI window for more information\n' % (self.pdb2pqr.getvalue(),
-                                                                                                                                      args,
-                                                                                                                                      retval)
-                       )
-            return False
+            raise util.PluginDialogException(f"Could not run pdb2pqr: {self.pdb2pqr.getvalue()} "
+                f"{args}\n\nIt returned {retval}.\nCheck the PyMOL external GUI window "
+                "for more information.\n"
+            )
         self.cleanup_generated_file(self.pymol_generated_pqr_filename.getvalue())
         unassigned_atoms = self.get_unassigned_atoms(self.pymol_generated_pqr_filename.getvalue())
         if unassigned_atoms:
-            pymol.cmd.select('unassigned', 'ID %s' % unassigned_atoms)
-            message_text = "Unable to assign parameters for the %s atoms in selection 'unassigned'.\nPlease either remove these unassigned atoms and re-start the calculation\nor fix their parameters in the generated PQR file and run the calculation\nusing the modified PQR file (select 'Use another PQR' in 'Main')." % len(unassigned_atoms.split('+'))
+            pymol.cmd.select('unassigned', f"ID {unassigned_atoms}")
             print("Unassigned atom IDs", unassigned_atoms)
-            show_error(message_text)
-            return False
+            raise util.PluginDialogException(f"Unable to assign parameters for the "
+                f"{len(unassigned_atoms.split('+'))} atoms in selection 'unassigned'.\n"
+                "Please either remove these unassigned atoms and re-start the calculation\n"
+                "or fix their parameters in the generated PQR file and run the calculation\n"
+                "using the modified PQR file (select 'Use another PQR' in 'Main')."
+            )
         if DEBUG:
             print("I WILL RETURN TRUE from pdb2pqr")
-        return True
 
     # PQR generation routines are required to call
     # cleanup_generated_file themselves.
     def _write_pymol_pqr_file(self):
-        """generate a pqr file from pymol
+        """Generate a pqr file from pymol.
 
         This will also call through to champ to set the Hydrogens and charges
         if it needs to.  If it does that, it may change the value self.selection
@@ -192,32 +157,31 @@ class PDB2PQRWrapper:
 
         call this through the wrapper write_PQR_file
         """
+        try:
+            from chempy.champ import assign
+        except ModuleNotFoundError:
+            raise util.PluginDialogException("_write_pymol_pqr_file couldn't import chempy.champ.")
+
         # CHAMP will break in many cases if retain_order is set. So,
         # we unset it here and reset it later. Note that it's fine to
         # reset it before things are written out.
         ret_order = pymol.cmd.get('retain_order')
         pymol.cmd.set('retain_order', 0)
 
-        # WLD
-        sel = "((%s) or (neighbor (%s) and hydro))" % (
-            self.selection.getvalue(), self.selection.getvalue())
-
+        sel = self.selection.getvalue()
+        sel = f"(({sel}) or (neighbor ({sel}) and hydro))"
         pqr_filename = self.getPqrFilename()
         try:
             if DEBUG:
                 print("Erasing previous contents of", pqr_filename)
             f = open(pqr_filename, 'w')
             f.close()
-        except:
-            error_dialog = Pmw.MessageDialog(self.parent,
-                                             title='Error',
-                                             message_text="Could not write PQR file.\nPlease check that temporary PQR filename is valid.",
-                                             )
-            junk = error_dialog.activate()
-            return False
+        except Exception as exc:
+            raise util.PluginDialogException("Could not write PQR file.\n"
+                f"Please check that temporary PQR filename \"{pqr_filename}\" is valid."
+            )
 
         # PyMOL + champ == pqr
-        from chempy.champ import assign
         if self.radiobuttons.getvalue() == 'Use PyMOL generated PQR and PyMOL generated Hydrogens and termini':
             pymol.cmd.remove('hydro and %s' % sel)
             assign.missing_c_termini(sel)
@@ -229,23 +193,19 @@ class PDB2PQRWrapper:
 
         apbs_clone = pymol.cmd.get_unused_name()
         pymol.cmd.create(apbs_clone, sel)
-
         self.fix_columns(apbs_clone)
         pymol.cmd.save(pqr_filename, apbs_clone)
-
         pymol.cmd.delete(apbs_clone)
 
         self.cleanup_generated_file(pqr_filename)
         missed_count = pymol.cmd.count_atoms(f"({sel}) and flag 23")
         if missed_count > 0:
             pymol.cmd.select("unassigned", f"({sel}) and flag 23")
-            error_dialog = Pmw.MessageDialog(self.parent,
-                                             title='Error',
-                                             message_text="Unable to assign parameters for the %s atoms in selection 'unassigned'.\nPlease either remove these unassigned atoms and re-start the calculation\nor fix their parameters in the generated PQR file and run the calculation\nusing the modified PQR file (select 'Use another PQR' in 'Main')." % missed_count,
-                                             )
-            junk = error_dialog.activate()
-            return False
-        return True
+            raise util.PluginDialogException(f"Unable to assign parameters for the {missed_count} "
+                "atoms in selection 'unassigned'.\nPlease either remove these unassigned atoms "
+                "and re-start the calculation\nor fix their parameters in the generated PQR file "
+                "and run the calculation\nusing the modified PQR file (select 'Use another PQR' in 'Main')."
+            )
 
     def write_PQR_file(self):
         ''' Wrapper for all of our PQR generation routines.
@@ -261,37 +221,24 @@ class PDB2PQRWrapper:
         elif self.radiobuttons.getvalue() == 'Use PDB2PQR':
             if DEBUG:
                 print("GENERATING PQR FILE via PDB2PQR")
-            good = self._write_pdb2pqr_file()
-            if not good:
-                if DEBUG:
-                    print("Could not generate PDB2PQR file.  _write_pdb2pqr_file failed.")
-                return False
+            self._write_pdb2pqr_file()
             if DEBUG:
                 print("GENERATED")
-        else:  # it's one of the pymol-generated options
+        else:
+            # it's one of the pymol-generated options
             if DEBUG:
                 print("GENERATING PQR FILE via PyMOL")
-            good = self._write_pymol_pqr_file()
-            if not good:
-                if DEBUG:
-                    print("Could not generate the PyMOL-basd PQR file.  generatePyMOLPqrFile failed.")
-                return False
-            if DEBUG:
-                print("GENERATED")
-        return True
+            self._write_pymol_pqr_file()
+        if DEBUG:
+            print("GENERATED")
 
 
 class PSizeWrapper:
 
     def run(self):
-        class NoPsize(Exception):
-            pass
-
-        class NoPDB(Exception):
-            pass
         try:
             if not self.psize.valid():
-                raise NoPsize
+                raise util.NoPsizeException
             good = self.write_PQR_file()
             if not good:
                 print("Could not generate PQR file!")
@@ -301,7 +248,7 @@ class PSizeWrapper:
                 f = open(pqr_filename, 'r')
                 f.close()
             except:
-                raise NoPDB
+                raise util.NoPDBException
 
             #
             # Do some magic to load the psize module
@@ -327,7 +274,7 @@ class PSizeWrapper:
             finegridpoints = size.getFineGridPoints()  # dime
             center = size.getCenter()  # cgcent and fgcent
             print("APBS's psize.py was used to calculated grid dimensions")
-        except (NoPsize, ImportError, AttributeError) as e:
+        except (util.NoPsizeException, ImportError, AttributeError) as e:
             print(e)
             print("This plugin was used to calculated grid dimensions")
             #
@@ -346,12 +293,7 @@ class PSizeWrapper:
                     if maxs[i] is None or (a.coord[i] + a.elec_radius) > maxs[i]:
                         maxs[i] = a.coord[i] + a.elec_radius
             if None in mins or None in maxs:
-                error_dialog = Pmw.MessageDialog(self.parent,
-                                                 title='Error',
-                                                 message_text="No atoms were in your selection",
-                                                 )
-                junk = error_dialog.activate()
-                return False
+                raise util.PluginDialogException("No atoms were in your selection.")
 
             box_length = [maxs[i] - mins[i] for i in range(3)]
             center = [(maxs[i] + mins[i]) / 2.0 for i in range(3)]
@@ -404,13 +346,8 @@ class PSizeWrapper:
             print("mult_fac", mult_fac)
             print("finegridpoints", finegridpoints)
 
-        except NoPDB:
-            error_dialog = Pmw.MessageDialog(self.parent,
-                                             title='Error',
-                                             message_text="Please set a temporary PDB file location",
-                                             )
-            junk = error_dialog.activate()
-            return False
+        except util.NoPDBException:
+            raise util.PluginDialogException("Please set a temporary PDB file location.")
 
         if (finegridpoints[0] > 0) and (finegridpoints[1] > 0) and (finegridpoints[2] > 0):
             max_mem_allowed = float(self.max_mem_allowed.getvalue())
@@ -570,18 +507,9 @@ class APBSWrapper:
     def check_input(self):
         """No silent checks. Always show error.
         """
-        def show_error(message):
-            print("In show error 1")
-            error_dialog = Pmw.MessageDialog(self.parent,
-                                             title='Error',
-                                             message_text=message,
-                                             )
-            junk = error_dialog.activate()
-
         # First, check to make sure we have valid locations for apbs and psize
         if not self.binary.valid():
-            show_error('Please set the APBS binary location')
-            return False
+            raise util.PluginDialogException('Please set the APBS binary location.')
         # If the path to psize is not correct, that's fine .. we'll
         # do the calculations ourself.
 
@@ -592,37 +520,33 @@ class APBSWrapper:
         # Now check the temporary filenames
         if self.radiobuttons.getvalue() != 'Use another PQR':
             if not self.pymol_generated_pqr_filename.getvalue():
-                show_error('Please choose a name for the PyMOL\ngenerated PQR file')
-                return False
+                raise util.PluginDialogException('Please choose a name for the PyMOL\ngenerated PQR file.')
         elif not self.pqr_to_use.valid():
-            show_error('Please select a valid pqr file or tell\nPyMOL to generate one')
-            return False
+            raise util.PluginDialogException('Please select a valid pqr file or tell\nPyMOL to generate one.')
         if not self.pymol_generated_pdb_filename.getvalue():
-            show_error('Please choose a name for the PyMOL\ngenerated PDB file')
-            return False
+            raise util.PluginDialogException('Please choose a name for the PyMOL\ngenerated PDB file.')
         if not self.pymol_generated_dx_filename.getvalue():
-            show_error('Please choose a name for the PyMOL\ngenerated DX file')
-            return False
+            raise util.PluginDialogException('Please choose a name for the PyMOL\ngenerated DX file.')
         if not self.pymol_generated_in_filename.getvalue():
-            show_error('Please choose a name for the PyMOL\ngenerated APBS input file')
-            return False
+            raise util.PluginDialogException('Please choose a name for the PyMOL\ngenerated APBS input file.')
         if not self.map.getvalue():
-            show_error('Please choose a name for the generated map.')
-            return False
+            raise util.PluginDialogException('Please choose a name for the generated map.')
 
         # Now, the ions
         for sign in ('plus', 'minus'):
             for value in ('one', 'two'):
                 for parm in ('conc', 'rad'):
                     if not getattr(self, f"ion_{sign}_{value}_{parm}").valid():
-                        show_error('Please correct Ion concentrations and radii')
-                        return False
+                        raise util.PluginDialogException("Please correct Ion "
+                            f"concentrations and radii (ion_{sign}_{value}_{parm})"
+                        )
         # Now the grid
         for grid_type in ('coarse', 'fine', 'points', 'center'):
             for coord in ('x', 'y', 'z'):
                 if not getattr(self, f"grid_{grid_type}_{coord}").valid():
-                    show_error('Please correct grid dimensions\nby clicking on the "Set grid" button')
-                    return False
+                    raise util.PluginDialogException("Please correct grid dimensions"
+                        f"\nby clicking on the "Set grid" button (grid_{grid_type}_{coord})"
+                    )
 
         # Now other easy things
         for message, thing in (
@@ -633,83 +557,75 @@ class APBSWrapper:
             ('sdens', self.sdens),
         ):
             if not thing.valid():
-                show_error('Please correct %s' % message)
-                return False
-
-        return True
+                raise util.PluginDialogException(f"Please correct {message}.")
 
     def write_APBS_input_file(self):
-        if self.check_input():
-            #
-            # set up our variables
-            #
-            pqr_filename = self.getPqrFilename()
+        self.check_input()
 
-            grid_points = [int(getattr(self, 'grid_points_%s' % i).getvalue()) for i in 'x y z'.split()]
-            cglen = [float(getattr(self, 'grid_coarse_%s' % i).getvalue()) for i in 'x y z'.split()]
-            fglen = [float(getattr(self, 'grid_fine_%s' % i).getvalue()) for i in 'x y z'.split()]
-            cent = [float(getattr(self, 'grid_center_%s' % i).getvalue()) for i in 'x y z'.split()]
+        # set up our variables
+        pqr_filename = self.getPqrFilename()
 
-            apbs_mode = self.apbs_mode.getvalue()
-            if apbs_mode == 'Nonlinear Poisson-Boltzmann Equation':
-                apbs_mode = 'npbe'
-            else:
-                apbs_mode = 'lpbe'
+        grid_points = [int(getattr(self, 'grid_points_%s' % i).getvalue()) for i in 'x y z'.split()]
+        cglen = [float(getattr(self, 'grid_coarse_%s' % i).getvalue()) for i in 'x y z'.split()]
+        fglen = [float(getattr(self, 'grid_fine_%s' % i).getvalue()) for i in 'x y z'.split()]
+        cent = [float(getattr(self, 'grid_center_%s' % i).getvalue()) for i in 'x y z'.split()]
 
-            bcflmap = {'Zero': 'zero',
-                       'Single DH sphere': 'sdh',
-                       'Multiple DH spheres': 'mdh',
-                       #'Focusing': 'focus',
-                       }
-            bcfl = bcflmap[self.bcfl.getvalue()]
-
-            chgmmap = {'Linear': 'spl0',
-                       'Cubic B-splines': 'spl2',
-                       'Quintic B-splines': 'spl4',
-                       }
-            chgm = chgmmap[self.chgm.getvalue()]
-
-            srfmmap = {'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
-                        'Same, but with harmonic average smoothing': 'smol',
-                        'Cubic spline': 'spl2',
-                        'Similar to cubic spline, but with 7th order polynomial': 'spl4', }
-
-            srfm = srfmmap[self.srfm.getvalue()]
-
-            dx_filename = self.pymol_generated_dx_filename.getvalue()
-            if dx_filename.endswith('.dx'):
-                dx_filename = dx_filename[:-3]
-            apbs_input_text = template_APBS_input_file(pqr_filename,
-                                               grid_points,
-                                               cglen,
-                                               fglen,
-                                               cent,
-                                               apbs_mode,
-                                               bcfl,
-                                               float(self.ion_plus_one_conc.getvalue()), float(self.ion_plus_one_rad.getvalue()),
-                                               float(self.ion_minus_one_conc.getvalue()), float(self.ion_minus_one_rad.getvalue()),
-                                               float(self.ion_plus_two_conc.getvalue()), float(self.ion_plus_two_rad.getvalue()),
-                                               float(self.ion_minus_two_conc.getvalue()), float(self.ion_minus_two_rad.getvalue()),
-                                               float(self.interior_dielectric.getvalue()), float(self.solvent_dielectric.getvalue()),
-                                               chgm,
-                                               srfm,
-                                               float(self.solvent_radius.getvalue()),
-                                               float(self.system_temp.getvalue()),
-                                               float(self.sdens.getvalue()),
-                                               dx_filename,
-                                               )
-            if DEBUG:
-                print("GOT THE APBS INPUT FILE")
-
-            # write out the input text
-            try:
-                print("Erasing contents of", self.pymol_generated_in_filename.getvalue(), "in order to write new input file")
-                f = open(self.pymol_generated_in_filename.getvalue(), 'w')
-                f.write(apbs_input_text)
-                f.close()
-            except IOError:
-                print("ERROR: Got the input file from APBS, but failed when trying to write to %s" % self.pymol_generated_in_filename.getvalue())
-            return True
+        if self.apbs_mode.getvalue() == 'Nonlinear Poisson-Boltzmann Equation':
+            apbs_mode = 'npbe'
         else:
-            # self.check_input()
-            return False
+            apbs_mode = 'lpbe'
+
+        bcflmap = {'Zero': 'zero',
+                    'Single DH sphere': 'sdh',
+                    'Multiple DH spheres': 'mdh',
+                    #'Focusing': 'focus',
+                    }
+        bcfl = bcflmap[self.bcfl.getvalue()]
+
+        chgmmap = {'Linear': 'spl0',
+                    'Cubic B-splines': 'spl2',
+                    'Quintic B-splines': 'spl4',
+                    }
+        chgm = chgmmap[self.chgm.getvalue()]
+
+        srfmmap = {'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
+                    'Same, but with harmonic average smoothing': 'smol',
+                    'Cubic spline': 'spl2',
+                    'Similar to cubic spline, but with 7th order polynomial': 'spl4', }
+        srfm = srfmmap[self.srfm.getvalue()]
+
+        dx_filename = self.pymol_generated_dx_filename.getvalue()
+        if dx_filename.endswith('.dx'):
+            dx_filename = dx_filename[:-3]
+        apbs_input_text = template_APBS_input_file(pqr_filename,
+                                            grid_points,
+                                            cglen,
+                                            fglen,
+                                            cent,
+                                            apbs_mode,
+                                            bcfl,
+                                            float(self.ion_plus_one_conc.getvalue()), float(self.ion_plus_one_rad.getvalue()),
+                                            float(self.ion_minus_one_conc.getvalue()), float(self.ion_minus_one_rad.getvalue()),
+                                            float(self.ion_plus_two_conc.getvalue()), float(self.ion_plus_two_rad.getvalue()),
+                                            float(self.ion_minus_two_conc.getvalue()), float(self.ion_minus_two_rad.getvalue()),
+                                            float(self.interior_dielectric.getvalue()), float(self.solvent_dielectric.getvalue()),
+                                            chgm,
+                                            srfm,
+                                            float(self.solvent_radius.getvalue()),
+                                            float(self.system_temp.getvalue()),
+                                            float(self.sdens.getvalue()),
+                                            dx_filename,
+                                            )
+        if DEBUG:
+            print("GOT THE APBS INPUT FILE")
+
+        # write out the input text
+        try:
+            print("Erasing contents of", self.pymol_generated_in_filename.getvalue(), "in order to write new input file")
+            f = open(self.pymol_generated_in_filename.getvalue(), 'w')
+            f.write(apbs_input_text)
+            f.close()
+        except IOError:
+            print("ERROR: Got the input file from APBS, but failed when trying to write to %s" % self.pymol_generated_in_filename.getvalue())
+
+
