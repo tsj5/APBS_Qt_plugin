@@ -9,36 +9,105 @@ import pathlib
 
 _log = logging.getLogger(__name__)
 
-# ----------------------------------
+import pymol.Qt.QtCore as QtCore
 
-class BasePQRModel():
-    """Config state shared by all PQRModels.
+class SignalWrapper():
+    """Descriptor to automatically emit a pyqtSignal (assumed predefined)
+    on change of a model attribute.
+    """
+    def __init__(self, name):
+        self.__set_name__(None, name)
+
+    def __set_name__(self, owner, name):
+        self.public_name = name
+        self.private_name = '_' + name
+        self.signal_name = '_' + name + '_changed'
+
+    def __get__(self, obj, objtype=None):
+        return getattr(obj, self.private_name)
+
+    def __set__(self, obj, value):
+        old_value = getattr(obj, self.private_name)
+        if old_value != value:
+            # emit signal if we changed to different value
+            getattr(obj, self.signal_name).emit(value)
+        setattr(obj, self.private_name, value)
+
+class DataclassDescriptorMetaclass(type):
+    """Metaclass to automatically assign descriptors and pyqtSignals to all
+    fields in parent dataclasses. Could also do this by hacking dataclass
+    decorator, but this makes class definitions a bit more explicit.
+    """
+    def __new__(cls, clsname, bases, attrs):
+        for base_cls in bases:
+            if dc.is_dataclass(base_cls):
+                for field in dc.fields(base_cls):
+                    desc = SignalWrapper(field.name)
+                    attrs[desc.public_name] = desc
+                    attrs[desc.private_name] = (field.type)()
+                    attrs[desc.signal_name] = QtCore.pyqtSignal(field.type)
+
+        return super(DataclassDescriptorMetaclass, cls).__new__(
+            cls, clsname, bases, attrs)
+
+# ----------------------------------------------------------------------
+
+@dc.dataclass
+class BasePQRModelData():
+    """Fields defining config state shared by all PQRModels.
     """
     pqr_file: pathlib.Path
     cleanup_pqr: True
 
 @dc.dataclass
-class PreExistingPQRModel(BasePQRModel):
+class PreExistingPQRModelData(BasePQRModelData):
+    """Fields defining config state for using a pre-existing PQR file.
+    """
+    pass
+class PreExistingPQRModel(
+    QtCore.QObject, PreExistingPQRModelData, metaclass = DataclassDescriptorMetaclass
+):
     """Config state for using a pre-existing PQR file.
     """
     pass
 
 @dc.dataclass
-class PDB2PQRModel(BasePQRModel):
-    """Config state for generating a PQR file using the pdb2pqr binary.
+class PDB2PQRModelData(BasePQRModelData):
+    """Fields defining config state for generating a PQR file using the pdb2pqr
+    binary.
     """
     pdb2pqr_path: pathlib.Path
     pdb_file: pathlib.Path
+class PDB2PQRModel(
+    QtCore.QObject, PDB2PQRModelData, metaclass = DataclassDescriptorMetaclass
+):
+    """Config state for generating a PQR file using the pdb2pqr binary.
+    """
+    pass
 
 @dc.dataclass
-class PyMOLPQRExistingHModel(BasePQRModel):
+class PyMOLPQRExistingHModelData(BasePQRModelData):
+    """Fields defining config state for generating a PQR file using PyMol with
+    existing hydrogens and termini.
+    """
+    pass
+class PyMOLPQRExistingHModel(
+    QtCore.QObject, PyMOLPQRExistingHModelData, metaclass = DataclassDescriptorMetaclass
+):
     """Config state for generating a PQR file using PyMol with existing hydrogens
     and termini.
     """
     pass
 
 @dc.dataclass
-class PyMOLPQRAddHModel(BasePQRModel):
+class PyMOLPQRAddHModelData(BasePQRModelData):
+    """Fields defining config state for generating a PQR file using PyMol with
+    PyMol-added hydrogens and termini.
+    """
+    pass
+class PyMOLPQRAddHModel(
+    QtCore.QObject, PyMOLPQRAddHModelData, metaclass = DataclassDescriptorMetaclass
+):
     """Config state for generating a PQR file using PyMol with PyMol-added hydrogens
     and termini.
     """
@@ -47,8 +116,8 @@ class PyMOLPQRAddHModel(BasePQRModel):
 # ----------------------------------
 
 @dc.dataclass
-class BaseGridModel():
-    """Config state shared by all GridModels.
+class BaseGridModelData():
+    """Fields defining config state shared by all GridModels.
     """
     coarse_dim: float
     fine_dim: float
@@ -69,18 +138,31 @@ class BaseGridModel():
     grid_points_z: float
 
 @dc.dataclass
-class PSizeGridModel(BaseGridModel):
+class PSizeGridModelData(BaseGridModelData):
+    """Fields defining config state for generating APBS grid parameters using
+    psize.py (provided as part of APBS.)
+    """
+    psize_path: pathlib.Path
+class PSizeGridModel(
+    QtCore.QObject, PSizeGridModelData, metaclass = DataclassDescriptorMetaclass
+):
     """Config state for generating APBS grid parameters using psize.py (provided
     as part of APBS.)
     """
-    psize_path: pathlib.Path
+    pass
 
 @dc.dataclass
-class PluginGridModel(BaseGridModel):
+class PluginGridModelData(BaseGridModelData):
+    """Fields defining config state for generating APBS grid parameters using
+    the plugin's logic.
+    """
+    pass
+class PluginGridModel(
+    QtCore.QObject, PluginGridModelData, metaclass = DataclassDescriptorMetaclass
+):
     """Config state for generating APBS grid parameters using the plugin's logic.
     """
     pass
-
 
 # ----------------------------------
 
@@ -110,8 +192,8 @@ srfmmap = {'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
 srfm = srfmmap[self.srfm.getvalue()]
 
 @dc.dataclass
-class APBSModel():
-    """Config state for options to be passed to APBS.
+class APBSModelData():
+    """Fields defining config state for options to be passed to APBS.
     """
     apbs_path: pathlib.Path
     apbs_config_file: pathlib.Path
@@ -145,8 +227,15 @@ class APBSModel():
     # object, and the APBS calculation time. APBS default value is 10.0.
     sdens: float =10.0
 
-        #"max_mem_allowed" : 400,
-        "max_mem_allowed": 1500,
-        "potential_at_sas": 1,
-        "surface_solvent": 0,
-        "show_surface_for_scanning": 1,
+        # #"max_mem_allowed" : 400,
+        # "max_mem_allowed": 1500,
+        # "potential_at_sas": 1,
+        # "surface_solvent": 0,
+        # "show_surface_for_scanning": 1,
+
+class APBSModel(
+    QtCore.QObject, APBSModelData, metaclass = DataclassDescriptorMetaclass
+):
+    """Config state for options to be passed to APBS.
+    """
+    pass
