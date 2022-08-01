@@ -15,8 +15,9 @@ class SignalWrapper():
     """Descriptor to automatically emit a pyqtSignal (assumed predefined)
     on change of a model attribute.
     """
-    def __init__(self, name):
+    def __init__(self, name, default=None):
         self.__set_name__(None, name)
+        self._default = default
 
     def __set_name__(self, owner, name):
         self.public_name = name
@@ -24,6 +25,8 @@ class SignalWrapper():
         self.signal_name = '_' + name + '_changed'
 
     def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self._default
         return getattr(obj, self.private_name)
 
     def __set__(self, obj, value):
@@ -33,9 +36,12 @@ class SignalWrapper():
             getattr(obj, self.signal_name).emit(value)
         setattr(obj, self.private_name, value)
 
-class DataclassDescriptorMetaclass(type):
+class DataclassDescriptorMetaclass(type(QtCore.QObject)):
     """Metaclass to automatically assign descriptors and pyqtSignals to all
-    fields in parent dataclasses. Could also do this by hacking dataclass
+    fields in parent dataclasses.
+
+    Inherits from QObject's metaclass -- appears to preserve the bookkeeping
+    done there. Would be more robust to do this by wrapping dataclass
     decorator, but this makes class definitions a bit more explicit.
     """
     def __new__(cls, clsname, bases, attrs):
@@ -53,7 +59,33 @@ class DataclassDescriptorMetaclass(type):
 # ----------------------------------------------------------------------
 
 @dc.dataclass
-class BasePQRModelData():
+class BaseModelData():
+    """Fields defining config state for using a pre-existing PQR file.
+    """
+    # signals/slots keep UI/Views in sync with Model, but we need this flag to
+    # track if that config has been changed since backend state (output of
+    # calculations) was last updated.
+    stale: bool = True
+
+# ----------------------------------
+
+@dc.dataclass
+class PyMolSelectionModelData(BaseModelData):
+    """Fields defining config state for using a pre-existing PQR file.
+    """
+    selection_mode: str
+    selection_hash: int
+class PyMolSelectionData(
+    QtCore.QObject, PyMolSelectionModelData, metaclass = DataclassDescriptorMetaclass
+):
+    """Config state for using a pre-existing PQR file.
+    """
+    pass
+
+# ----------------------------------
+
+@dc.dataclass
+class BasePQRModelData(BaseModelData):
     """Fields defining config state shared by all PQRModels.
     """
     pqr_file: pathlib.Path
@@ -116,7 +148,7 @@ class PyMOLPQRAddHModel(
 # ----------------------------------
 
 @dc.dataclass
-class BaseGridModelData():
+class BaseGridModelData(BaseModelData):
     """Fields defining config state shared by all GridModels.
     """
     coarse_dim: float
@@ -192,7 +224,7 @@ srfmmap = {'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
 srfm = srfmmap[self.srfm.getvalue()]
 
 @dc.dataclass
-class APBSModelData():
+class APBSModelData(BaseModelData):
     """Fields defining config state for options to be passed to APBS.
     """
     apbs_path: pathlib.Path
