@@ -15,6 +15,7 @@ class BasePQRModel():
     """Config state shared by all PQRModels.
     """
     pqr_file: pathlib.Path
+    cleanup_pqr: True
 
 @dc.dataclass
 class PreExistingPQRModel(BasePQRModel):
@@ -45,17 +46,36 @@ class PyMOLPQRAddHModel(BasePQRModel):
 
 # ----------------------------------
 
+@dc.dataclass
 class BaseGridModel():
     """Config state shared by all GridModels.
     """
-    pass
+    coarse_dim: float
+    fine_dim: float
+    fine_grid_points: float
+    center: float
 
-class PsizeGridModel(BaseGridModel):
+    grid_coarse_x: float
+    grid_coarse_y: float
+    grid_coarse_z: float
+    grid_fine_x: float
+    grid_fine_y: float
+    grid_fine_z: float
+    grid_center_x: float
+    grid_center_y: float
+    grid_center_z: float
+    grid_points_x: float
+    grid_points_y: float
+    grid_points_z: float
+
+@dc.dataclass
+class PSizeGridModel(BaseGridModel):
     """Config state for generating APBS grid parameters using psize.py (provided
     as part of APBS.)
     """
     psize_path: pathlib.Path
 
+@dc.dataclass
 class PluginGridModel(BaseGridModel):
     """Config state for generating APBS grid parameters using the plugin's logic.
     """
