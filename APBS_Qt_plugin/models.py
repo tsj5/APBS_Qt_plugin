@@ -92,18 +92,6 @@ class BasePQRModelData(BaseModelData):
     cleanup_pqr: True
 
 @dc.dataclass
-class PreExistingPQRModelData(BasePQRModelData):
-    """Fields defining config state for using a pre-existing PQR file.
-    """
-    pass
-class PreExistingPQRModel(
-    QtCore.QObject, PreExistingPQRModelData, metaclass = DataclassDescriptorMetaclass
-):
-    """Config state for using a pre-existing PQR file.
-    """
-    pass
-
-@dc.dataclass
 class PDB2PQRModelData(BasePQRModelData):
     """Fields defining config state for generating a PQR file using the pdb2pqr
     binary.
@@ -144,6 +132,43 @@ class PyMOLPQRAddHModel(
     and termini.
     """
     pass
+
+@dc.dataclass
+class PreExistingPQRModelData(BasePQRModelData):
+    """Fields defining config state for using a pre-existing PQR file.
+    """
+    pass
+class PreExistingPQRModel(
+    QtCore.QObject, PreExistingPQRModelData, metaclass = DataclassDescriptorMetaclass
+):
+    """Config state for using a pre-existing PQR file.
+    """
+    pass
+
+class MultiPQRModel(QtCore.QObject):
+    """Wrapper for all PQRModel states, and user selection of PQR file generation
+    method.
+    """
+    _pqr_multimodel_index_changed = QtCore.pyqtSignal(int)
+
+    def __init__(self):
+        self.pqr_multimodel_index = SignalWrapper("pqr_multimodel_index", default=0)
+        self._model_state = (
+            PDB2PQRModel(),
+            PyMOLPQRExistingHModel(),
+            PyMOLPQRAddHModel(),
+            PreExistingPQRModel()
+        )
+
+    def __getattr__(self, name):
+        """Pass through all attribute access to the currently selected PQRModel.
+        """
+        return getattr(self._model_state[self.pqr_multimodel_index], name)
+
+    def __setattr__(self, name, value):
+        """Pass through all attribute access to the currently selected PQRModel.
+        """
+        setattr(self._model_state[self.pqr_multimodel_index], name, value)
 
 # ----------------------------------
 
@@ -195,6 +220,29 @@ class PluginGridModel(
     """Config state for generating APBS grid parameters using the plugin's logic.
     """
     pass
+
+class MultiGridModel(QtCore.QObject):
+    """Wrapper for all PQRModel states, and user selection of PQR file generation
+    method.
+    """
+    _grid_multimodel_index_changed = QtCore.pyqtSignal(int)
+
+    def __init__(self):
+        self.grid_multimodel_index = SignalWrapper("grid_multimodel_index", default=0)
+        self._model_state = (
+            PSizeGridModel(),
+            PluginGridModel()
+        )
+
+    def __getattr__(self, name):
+        """Pass through all attribute access to the currently selected PQRModel.
+        """
+        return getattr(self._model_state[self.grid_multimodel_index], name)
+
+    def __setattr__(self, name, value):
+        """Pass through all attribute access to the currently selected PQRModel.
+        """
+        setattr(self._model_state[self.grid_multimodel_index], name, value)
 
 # ----------------------------------
 
