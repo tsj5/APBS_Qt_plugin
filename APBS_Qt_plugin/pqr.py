@@ -1,7 +1,6 @@
 """
 Model, view and controller for PQR file generation configuration.
 """
-import dataclasses as dc
 import enum
 import logging
 import pathlib
@@ -12,82 +11,48 @@ _log = logging.getLogger(__name__)
 import pymol.Qt.QtCore as QtCore
 import util
 
-# ----------------------------------
+# ------------------------------------------------------------------------------
+# Models
 
-@dc.dataclass
-class BasePQRModelData(util.BaseModelData):
+@util.attrs_define_w_signals
+class PQRBaseModel(util.BaseModel):
     """Fields defining config state shared by all PQRModels.
     """
     pqr_file: pathlib.Path
     cleanup_pqr: True
 
-@dc.dataclass
-class PDB2PQRModelData(BasePQRModelData):
-    """Fields defining config state for generating a PQR file using the pdb2pqr
-    binary.
+@util.attrs_define_w_signals
+class PPQRDB2PQRModel(PQRBaseModel):
+    """Config state for generating a PQR file using the pdb2pqr binary.
     """
     pdb2pqr_path: pathlib.Path
     pdb_file: pathlib.Path
-class PDB2PQRModel(
-    QtCore.QObject, PDB2PQRModelData, metaclass = util.DataclassDescriptorMetaclass
-):
-    """Config state for generating a PQR file using the pdb2pqr binary.
+
+@util.attrs_define_w_signals
+class PQRPyMolModel(PQRBaseModel):
+    """Fields defining config state for generating a PQR file using PyMol.
     """
     pass
 
-@dc.dataclass
-class PyMOLPQRExistingHModelData(BasePQRModelData):
-    """Fields defining config state for generating a PQR file using PyMol with
-    existing hydrogens and termini.
-    """
-    pass
-class PyMOLPQRExistingHModel(
-    QtCore.QObject, PyMOLPQRExistingHModelData, metaclass = util.DataclassDescriptorMetaclass
-):
-    """Config state for generating a PQR file using PyMol with existing hydrogens
-    and termini.
-    """
-    pass
-
-@dc.dataclass
-class PyMOLPQRAddHModelData(BasePQRModelData):
-    """Fields defining config state for generating a PQR file using PyMol with
-    PyMol-added hydrogens and termini.
-    """
-    pass
-class PyMOLPQRAddHModel(
-    QtCore.QObject, PyMOLPQRAddHModelData, metaclass = util.DataclassDescriptorMetaclass
-):
-    """Config state for generating a PQR file using PyMol with PyMol-added hydrogens
-    and termini.
-    """
-    pass
-
-@dc.dataclass
-class PreExistingPQRModelData(BasePQRModelData):
+@util.attrs_define_w_signals
+class PQRPreExistingModel(PQRBaseModel):
     """Fields defining config state for using a pre-existing PQR file.
     """
     pass
-class PreExistingPQRModel(
-    QtCore.QObject, PreExistingPQRModelData, metaclass = util.DataclassDescriptorMetaclass
-):
-    """Config state for using a pre-existing PQR file.
-    """
-    pass
 
-class MultiPQRModel(QtCore.QObject):
+
+class PQRMultiModel(QtCore.QObject):
     """Wrapper for all PQRModel states, and user selection of PQR file generation
     method.
     """
-    _pqr_multimodel_index_changed = QtCore.pyqtSignal(int)
+    _pqr_multimodel_index_changed = util.PYQT_SIGNAL(int)
 
     def __init__(self):
         self.pqr_multimodel_index = util.SignalWrapper("pqr_multimodel_index", default=0)
         self._model_state = (
-            PDB2PQRModel(),
-            PyMOLPQRExistingHModel(),
-            PyMOLPQRAddHModel(),
-            PreExistingPQRModel()
+            PPQRDB2PQRModel(),
+            PQRPyMolModel(),
+            PQRPreExistingModel()
         )
 
     def __getattr__(self, name):
@@ -100,8 +65,8 @@ class MultiPQRModel(QtCore.QObject):
         """
         setattr(self._model_state[self.pqr_multimodel_index], name, value)
 
-# ----------------------------------
-
+# ------------------------------------------------------------------------------
+# Controllers
 
 class BasePQRController():
     """Base class with common methods for all implementations of PQR file generation.

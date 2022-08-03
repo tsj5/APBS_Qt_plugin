@@ -1,7 +1,6 @@
 """
 Model, view and controller for grid generation configuration.
 """
-import dataclasses as dc
 import logging
 import math
 import pathlib
@@ -11,9 +10,12 @@ _log = logging.getLogger(__name__)
 import pymol.Qt.QtCore as QtCore
 import util
 
-@dc.dataclass
-class BaseGridModelData(util.BaseModelData):
-    """Fields defining config state shared by all GridModels.
+# ------------------------------------------------------------------------------
+# Models
+
+@util.attrs_define_w_signals
+class GridBaseModel(util.BaseModel):
+    """Config state shared by all GridModels.
     """
     coarse_dim: float
     fine_dim: float
@@ -33,44 +35,31 @@ class BaseGridModelData(util.BaseModelData):
     grid_points_y: float
     grid_points_z: float
 
-@dc.dataclass
-class PSizeGridModelData(BaseGridModelData):
-    """Fields defining config state for generating APBS grid parameters using
-    psize.py (provided as part of APBS.)
-    """
-    psize_path: pathlib.Path
-class PSizeGridModel(
-    QtCore.QObject, PSizeGridModelData, metaclass = util.DataclassDescriptorMetaclass
-):
+@util.attrs_define_w_signals
+class GridPSizeModel(GridBaseModel)
     """Config state for generating APBS grid parameters using psize.py (provided
     as part of APBS.)
     """
     pass
 
-@dc.dataclass
-class PluginGridModelData(BaseGridModelData):
-    """Fields defining config state for generating APBS grid parameters using
-    the plugin's logic.
-    """
-    pass
-class PluginGridModel(
-    QtCore.QObject, PluginGridModelData, metaclass = util.DataclassDescriptorMetaclass
-):
+@util.attrs_define_w_signals
+class GridPluginModel(GridBaseModel):
     """Config state for generating APBS grid parameters using the plugin's logic.
     """
     pass
 
-class MultiGridModel(QtCore.QObject):
+class GridMultiModel(QtCore.QObject):
     """Wrapper for all PQRModel states, and user selection of PQR file generation
     method.
     """
-    _grid_multimodel_index_changed = QtCore.pyqtSignal(int)
+    _grid_multimodel_index_changed = util.PYQT_SIGNAL(int)
 
     def __init__(self):
         self.grid_multimodel_index = util.SignalWrapper("grid_multimodel_index", default=0)
+
         self._model_state = (
-            PSizeGridModel(),
-            PluginGridModel()
+            GridPSizeModel(),
+            GridPluginModel()
         )
 
     def __getattr__(self, name):
@@ -83,9 +72,8 @@ class MultiGridModel(QtCore.QObject):
         """
         setattr(self._model_state[self.grid_multimodel_index], name, value)
 
-# ----------------------------------
-
-
+# ------------------------------------------------------------------------------
+# Controllers
 
 class BaseGridController():
     """Logic used in all GridControllers.

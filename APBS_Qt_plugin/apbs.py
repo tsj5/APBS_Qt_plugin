@@ -12,6 +12,9 @@ _log = logging.getLogger(__name__)
 import pymol.Qt.QtCore as QtCore
 import util
 
+# ------------------------------------------------------------------------------
+# Models
+
 if self.apbs_mode.getvalue() == 'Nonlinear Poisson-Boltzmann Equation':
     apbs_mode = 'npbe'
 else:
@@ -36,9 +39,9 @@ srfmmap = {'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
             'Similar to cubic spline, but with 7th order polynomial': 'spl4', }
 srfm = srfmmap[self.srfm.getvalue()]
 
-@dc.dataclass
-class APBSModelData(util.BaseModelData):
-    """Fields defining config state for options to be passed to APBS.
+@util.attrs_define_w_signals
+class APBSModel(util.BaseModel):
+    """Config state for options to be passed to APBS.
     """
     apbs_path: pathlib.Path
     apbs_config_file: pathlib.Path
@@ -85,7 +88,8 @@ class APBSModel(
     """
     pass
 
-
+# ------------------------------------------------------------------------------
+# Controller
 
 class APBSController():
 
