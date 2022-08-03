@@ -15,29 +15,38 @@ import util
 # ------------------------------------------------------------------------------
 # Models
 
-if self.apbs_mode.getvalue() == 'Nonlinear Poisson-Boltzmann Equation':
-    apbs_mode = 'npbe'
-else:
-    apbs_mode = 'lpbe'
+ApbsModeEnum = util.LabeledEnum("ApbsModeEnum",
+    {
+        'Nonlinear Poisson-Boltzmann Equation':  'npbe',
+        'Linearized Poisson-Boltzmann Equation': 'lpbe'
+    }
+)
 
-bcflmap = {'Zero': 'zero',
-            'Single DH sphere': 'sdh',
-            'Multiple DH spheres': 'mdh',
-            #'Focusing': 'focus',
-            }
-bcfl = bcflmap[self.bcfl.getvalue()]
+BcflEnum = util.LabeledEnum("BcflEnum",
+    {
+        'Zero': 'zero',
+        'Single DH sphere': 'sdh',
+        'Multiple DH spheres': 'mdh',
+        #'Focusing': 'focus',
+    }
+)
 
-chgmmap = {'Linear': 'spl0',
-            'Cubic B-splines': 'spl2',
-            'Quintic B-splines': 'spl4',
-            }
-chgm = chgmmap[self.chgm.getvalue()]
+ChgmEnum = util.LabeledEnum("ChgmEnum",
+    {
+        'Linear': 'spl0',
+        'Cubic B-splines': 'spl2',
+        'Quintic B-splines': 'spl4',
+    }
+)
 
-srfmmap = {'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
-            'Same, but with harmonic average smoothing': 'smol',
-            'Cubic spline': 'spl2',
-            'Similar to cubic spline, but with 7th order polynomial': 'spl4', }
-srfm = srfmmap[self.srfm.getvalue()]
+SrfmEnum = util.LabeledEnum("SrfmEnum",
+    {
+        'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
+        'Same, but with harmonic average smoothing': 'smol',
+        'Cubic spline': 'spl2',
+        'Similar to cubic spline, but with 7th order polynomial': 'spl4'
+    }
+)
 
 @util.attrs_define_w_signals
 class APBSModel(util.BaseModel):
@@ -48,7 +57,7 @@ class APBSModel(util.BaseModel):
     apbs_dx_file: pathlib.Path
     apbs_map_name: str
 
-    apbs_mode: str = 'Linearized Poisson-Boltzmann Equation'
+    apbs_mode: str = ""
     bcfl: str = 'Single DH sphere' # Boundary condition flag
     ion_plus_one_conc: float = 0.15
     ion_plus_one_rad: float = 2.0
@@ -80,7 +89,6 @@ class APBSModel(util.BaseModel):
 # Controller
 
 class APBSController():
-
     _file_template = textwrap.dedent("""
         # Note that most of the comments here were taken from sample
         # input files that came with APBS.  You can find APBS at
@@ -165,65 +173,7 @@ class APBSController():
                         ):
         print("Getting APBS input")
 
-
-    def check_input(self):
-        """No silent checks. Always show error.
-        """
-        # First, check to make sure we have valid locations for apbs and psize
-        if not self.binary.valid():
-            raise util.PluginDialogException('Please set the APBS binary location.')
-        # If the path to psize is not correct, that's fine .. we'll
-        # do the calculations ourself.
-
-        # if not self.psize.valid():
-        #    show_error("Please set APBS's psize location")
-        #    return False
-
-        # Now check the temporary filenames
-        if self.radiobuttons.getvalue() != 'Use another PQR':
-            if not self.pymol_generated_pqr_filename.getvalue():
-                raise util.PluginDialogException('Please choose a name for the PyMOL\ngenerated PQR file.')
-        elif not self.pqr_to_use.valid():
-            raise util.PluginDialogException('Please select a valid pqr file or tell\nPyMOL to generate one.')
-        if not self.pymol_generated_pdb_filename.getvalue():
-            raise util.PluginDialogException('Please choose a name for the PyMOL\ngenerated PDB file.')
-        if not self.pymol_generated_dx_filename.getvalue():
-            raise util.PluginDialogException('Please choose a name for the PyMOL\ngenerated DX file.')
-        if not self.pymol_generated_in_filename.getvalue():
-            raise util.PluginDialogException('Please choose a name for the PyMOL\ngenerated APBS input file.')
-        if not self.map.getvalue():
-            raise util.PluginDialogException('Please choose a name for the generated map.')
-
-        # Now, the ions
-        for sign in ('plus', 'minus'):
-            for value in ('one', 'two'):
-                for parm in ('conc', 'rad'):
-                    if not getattr(self, f"ion_{sign}_{value}_{parm}").valid():
-                        raise util.PluginDialogException("Please correct Ion "
-                            f"concentrations and radii (ion_{sign}_{value}_{parm})"
-                        )
-        # Now the grid
-        for grid_type in ('coarse', 'fine', 'points', 'center'):
-            for coord in ('x', 'y', 'z'):
-                if not getattr(self, f"grid_{grid_type}_{coord}").valid():
-                    raise util.PluginDialogException("Please correct grid dimensions"
-                        f"\nby clicking on the "Set grid" button (grid_{grid_type}_{coord})"
-                    )
-
-        # Now other easy things
-        for message, thing in (
-            ('solvent dielectric', self.solvent_dielectric),
-            ('protein dielectric', self.interior_dielectric),
-            ('solvent radius', self.solvent_radius),
-            ('system temperature', self.system_temp),
-            ('sdens', self.sdens),
-        ):
-            if not thing.valid():
-                raise util.PluginDialogException(f"Please correct {message}.")
-
     def write_APBS_input_file(self):
-        self.check_input()
-
         # set up our variables
         pqr_filename = self.getPqrFilename()
 
@@ -237,24 +187,9 @@ class APBSController():
         else:
             apbs_mode = 'lpbe'
 
-        bcflmap = {'Zero': 'zero',
-                    'Single DH sphere': 'sdh',
-                    'Multiple DH spheres': 'mdh',
-                    #'Focusing': 'focus',
-                    }
-        bcfl = bcflmap[self.bcfl.getvalue()]
-
-        chgmmap = {'Linear': 'spl0',
-                    'Cubic B-splines': 'spl2',
-                    'Quintic B-splines': 'spl4',
-                    }
-        chgm = chgmmap[self.chgm.getvalue()]
-
-        srfmmap = {'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
-                    'Same, but with harmonic average smoothing': 'smol',
-                    'Cubic spline': 'spl2',
-                    'Similar to cubic spline, but with 7th order polynomial': 'spl4', }
-        srfm = srfmmap[self.srfm.getvalue()]
+        bcfl = self.bcfl.getvalue()
+        chgm = self.chgm.getvalue()
+        srfm = self.srfm.getvalue()
 
         dx_filename = self.pymol_generated_dx_filename.getvalue()
         if dx_filename.endswith('.dx'):
