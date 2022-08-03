@@ -20,8 +20,9 @@ class SignalWrapper():
     """Descriptor to automatically emit a pyqtSignal (assumed predefined)
     on change of a model attribute.
     """
-    def __init__(self, name):
+    def __init__(self, name, signal_type=None):
         self.__set_name__(None, name)
+        self.signal_type = signal_type
 
     def __set_name__(self, owner, name):
         self.public_name = name
@@ -38,7 +39,7 @@ class SignalWrapper():
         try:
             setattr(obj, self.private_name, value)
             if old_value != value:
-                getattr(obj, self.signal_name).emit(value)
+                getattr(obj, self.signal_name).emit(self.signal_type(value))
         except ValueError:
             # if attrs validation fails, don't emit signal
             raise
@@ -86,6 +87,39 @@ class BaseModel(QtCore.QObject):
     """Base class for our Model classes.
     """
     pass
+
+class MultiModel(QtCore.QObject):
+    """Wrapper for a collection of Models: maintains state of all models, but
+    attributes are only looked up on the currently active Model.
+    """
+    _multimodel_index_changed = PYQT_SIGNAL(int)
+
+    def __init__(self, models):
+        self.multimodel_index = SignalWrapper("multimodel_index", default=0)
+        self._model_state = models
+
+    def __getattr__(self, name):
+        """Pass through all attribute access to the currently selected Model.
+        """
+        try:
+            # Throws exception if not in prototype chain
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            return getattr(self._model_state[self.multimodel_index], name)
+
+    def __setattr__(self, name, value):
+        """Pass through all attribute access to the currently selected Model.
+        """
+        try:
+            # Throws exception if not in prototype chain
+            _ = object.__getattribute__(self, name)
+        except AttributeError:
+            try:
+                setattr(self._model_state[self.multimodel_index], name, value)
+            except Exception:
+                raise AttributeError(name)
+        else:
+            object.__setattr__(self, name, value)
 
 # ----------------------------------------------------------------------
 

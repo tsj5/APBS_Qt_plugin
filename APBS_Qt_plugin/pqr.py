@@ -18,13 +18,14 @@ import util
 class PQRBaseModel(util.BaseModel):
     """Fields defining config state shared by all PQRModels.
     """
-    pqr_file: pathlib.Path
-    cleanup_pqr: True
+    pqr_out_file: pathlib.Path
+    cleanup_pqr: bool
 
 @util.attrs_define_w_signals
 class PPQRDB2PQRModel(PQRBaseModel):
     """Config state for generating a PQR file using the pdb2pqr binary.
     """
+    pymol_selection: str
     pdb2pqr_path: pathlib.Path
     pdb_file: pathlib.Path
 
@@ -32,38 +33,14 @@ class PPQRDB2PQRModel(PQRBaseModel):
 class PQRPyMolModel(PQRBaseModel):
     """Fields defining config state for generating a PQR file using PyMol.
     """
-    pass
+    pymol_selection: str
+    add_hs: bool
 
 @util.attrs_define_w_signals
 class PQRPreExistingModel(PQRBaseModel):
     """Fields defining config state for using a pre-existing PQR file.
     """
-    pass
-
-
-class PQRMultiModel(QtCore.QObject):
-    """Wrapper for all PQRModel states, and user selection of PQR file generation
-    method.
-    """
-    _pqr_multimodel_index_changed = util.PYQT_SIGNAL(int)
-
-    def __init__(self):
-        self.pqr_multimodel_index = util.SignalWrapper("pqr_multimodel_index", default=0)
-        self._model_state = (
-            PPQRDB2PQRModel(),
-            PQRPyMolModel(),
-            PQRPreExistingModel()
-        )
-
-    def __getattr__(self, name):
-        """Pass through all attribute access to the currently selected PQRModel.
-        """
-        return getattr(self._model_state[self.pqr_multimodel_index], name)
-
-    def __setattr__(self, name, value):
-        """Pass through all attribute access to the currently selected PQRModel.
-        """
-        setattr(self._model_state[self.pqr_multimodel_index], name, value)
+    pqr_in_file: pathlib.Path
 
 # ------------------------------------------------------------------------------
 # Controllers

@@ -45,15 +45,9 @@ class APBSModel(util.BaseModel):
     """
     apbs_path: pathlib.Path
     apbs_config_file: pathlib.Path
-    apbs_pqr_file: pathlib.Path
     apbs_dx_file: pathlib.Path
     apbs_map_name: str
 
-    grid_points: tuple
-    cglen: tuple
-    fglen: tuple
-    cgcent: tuple
-    fgcent: tuple
     apbs_mode: str = 'Linearized Poisson-Boltzmann Equation'
     bcfl: str = 'Single DH sphere' # Boundary condition flag
     ion_plus_one_conc: float = 0.15
@@ -81,12 +75,6 @@ class APBSModel(util.BaseModel):
         # "surface_solvent": 0,
         # "show_surface_for_scanning": 1,
 
-class APBSModel(
-    QtCore.QObject, APBSModelData, metaclass = util.DataclassDescriptorMetaclass
-):
-    """Config state for options to be passed to APBS.
-    """
-    pass
 
 # ------------------------------------------------------------------------------
 # Controller

@@ -36,7 +36,7 @@ class GridBaseModel(util.BaseModel):
     grid_points_z: float
 
 @util.attrs_define_w_signals
-class GridPSizeModel(GridBaseModel)
+class GridPSizeModel(GridBaseModel):
     """Config state for generating APBS grid parameters using psize.py (provided
     as part of APBS.)
     """
@@ -47,30 +47,6 @@ class GridPluginModel(GridBaseModel):
     """Config state for generating APBS grid parameters using the plugin's logic.
     """
     pass
-
-class GridMultiModel(QtCore.QObject):
-    """Wrapper for all PQRModel states, and user selection of PQR file generation
-    method.
-    """
-    _grid_multimodel_index_changed = util.PYQT_SIGNAL(int)
-
-    def __init__(self):
-        self.grid_multimodel_index = util.SignalWrapper("grid_multimodel_index", default=0)
-
-        self._model_state = (
-            GridPSizeModel(),
-            GridPluginModel()
-        )
-
-    def __getattr__(self, name):
-        """Pass through all attribute access to the currently selected PQRModel.
-        """
-        return getattr(self._model_state[self.grid_multimodel_index], name)
-
-    def __setattr__(self, name, value):
-        """Pass through all attribute access to the currently selected PQRModel.
-        """
-        setattr(self._model_state[self.grid_multimodel_index], name, value)
 
 # ------------------------------------------------------------------------------
 # Controllers
