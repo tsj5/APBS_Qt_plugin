@@ -2,6 +2,7 @@
 Utility classes and functions.
 """
 import attrs
+import enum
 import functools
 import logging
 import pathlib
@@ -53,11 +54,24 @@ def _attr_field_transformer(cls, fields):
     """
     new_fields = []
     for f in fields:
-        desc = SignalWrapper(f.name)
+        # really don't want to put all signal type-casting logic here
+        if attrs.has(f.type):
+            # don't create a descriptor/signal for attributes that are other
+            # Models (ie building up Model object through composition.)
+            continue
+
+        if isinstance(f.type, pathlib.Path):
+            signal_type = str
+        elif isinstance(f.type, enum.Enum):
+            signal_type = int
+        else:
+            signal_type = f.type
+
+        desc = SignalWrapper(f.name, signal_type)
         renamed_f = f.evolve(name=desc.private_name)
         new_fields.append(renamed_f)
         setattr(cls, desc.public_name, desc)
-        setattr(cls, desc.signal_name, PYQT_SIGNAL(f.type))
+        setattr(cls, desc.signal_name, PYQT_SIGNAL(signal_type))
     return new_fields
 
 def attrs_define_w_signals(cls=None, **deco_kwargs):
