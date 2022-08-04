@@ -1,48 +1,37 @@
 """
 Model, view and controller for grid generation configuration.
 """
+import os
 import logging
 import math
 import pathlib
 
 _log = logging.getLogger(__name__)
 
-import pymol.Qt.QtCore as QtCore
 import util
 
 # ------------------------------------------------------------------------------
 # Models
 
-@util.attrs_define_w_signals
+@util.attrs_define
 class GridBaseModel(util.BaseModel):
     """Config state shared by all GridModels.
     """
-    coarse_dim: float
-    fine_dim: float
-    fine_grid_points: float
-    center: float
+    coarse_dim: list
+    fine_dim: list
+    fine_grid_points: list
+    center: list
 
-    grid_coarse_x: float
-    grid_coarse_y: float
-    grid_coarse_z: float
-    grid_fine_x: float
-    grid_fine_y: float
-    grid_fine_z: float
-    grid_center_x: float
-    grid_center_y: float
-    grid_center_z: float
-    grid_points_x: float
-    grid_points_y: float
-    grid_points_z: float
+    max_mem_allowed: int = 2500
 
-@util.attrs_define_w_signals
+@util.attrs_define
 class GridPSizeModel(GridBaseModel):
     """Config state for generating APBS grid parameters using psize.py (provided
     as part of APBS.)
     """
     pass
 
-@util.attrs_define_w_signals
+@util.attrs_define
 class GridPluginModel(GridBaseModel):
     """Config state for generating APBS grid parameters using the plugin's logic.
     """
@@ -53,9 +42,13 @@ class GridPluginModel(GridBaseModel):
 
 _FLOAT_MB = 1024. * 1024.
 
-class BaseGridController():
+class BaseGridController(util.BaseController):
     """Logic used in all GridControllers.
     """
+    def __init__(self, model, view, pymol_controller):
+        super(BaseGridController, self).__init__(model, view)
+        self.pymol_cmd = pymol_controller
+
     @staticmethod
     def product_of_elts(vec):
         # return functools.reduce(operator.mul, vec)
@@ -68,10 +61,13 @@ class BaseGridController():
     def mem_to_grid(mem):
         return int(mem * _FLOAT_MB / 200.)
 
-    def correct_fine_grid(self, fine_grid_pts, max_mem_allowed):
+    def correct_fine_grid(self):
         """Coarsen fine grid if current value would use too much memory, as set
         by `max_mem_allowed`. `fine_grid_pts` is a 3-vector of `int`s.
         """
+        fine_grid_pts = self.model.fine_grid_pts
+        max_mem_allowed = self.model.max_mem_allowed
+
         max_grid_points = self.mem_to_grid(max_mem_allowed)
         _log.info(f"Estimated memory usage: {self.grid_to_mem(fine_grid_pts)} "
             f"MB out of maximum allowed: {max_mem_allowed}")
@@ -117,21 +113,9 @@ class BaseGridController():
 
     def update_grid_xyz(self, coarse_dim, fine_dim, center, fine_grid_pts):
         _log.info("\tcoarse grid: (%5.3f,%5.3f,%5.3f)" % tuple(coarse_dim))
-        self.grid_coarse_x.setvalue(coarse_dim[0])
-        self.grid_coarse_y.setvalue(coarse_dim[1])
-        self.grid_coarse_z.setvalue(coarse_dim[2])
         _log.info("\tfine grid: (%5.3f,%5.3f,%5.3f)" % tuple(fine_dim))
-        self.grid_fine_x.setvalue(fine_dim[0])
-        self.grid_fine_y.setvalue(fine_dim[1])
-        self.grid_fine_z.setvalue(fine_dim[2])
         _log.info("\tcenter: (%5.3f,%5.3f,%5.3f)" % tuple(center))
-        self.grid_center_x.setvalue(center[0])
-        self.grid_center_y.setvalue(center[1])
-        self.grid_center_z.setvalue(center[2])
         _log.info("\tfine grid points (%d,%d,%d)" % tuple(fine_grid_pts))
-        self.grid_points_x.setvalue(fine_grid_pts[0])
-        self.grid_points_y.setvalue(fine_grid_pts[1])
-        self.grid_points_z.setvalue(fine_grid_pts[2])
 
 class PSizeGridController(BaseGridController):
     """Logic used when grid parameters are set via APBS's psize.py.
@@ -144,24 +128,14 @@ class PSizeGridController(BaseGridController):
     def set_grid_params(self):
         if not self.psize.valid():
             raise util.NoPsizeException
-        good = self.write_PQR_file()
-        if not good:
-            print("Could not generate PQR file!")
-            return False
-        pqr_filename = self.getPqrFilename()
 
-        sel = "((%s) or (neighbor (%s) and hydro))" % (
-            self.selection.getvalue(), self.selection.getvalue())
-
-        if pymol.cmd.count_atoms(self.selection.getvalue() + " and not alt ''") != 0:
+        sel = self.pymol_cmd.model.selection # NB not pymol_selection
+        if self.pymol_cmd.count_atoms(sel + " and not alt ''") != 0:
             _log.warning("You have alternate locations for some of your atoms!")
-        # pymol.cmd.save(pqr_filename,sel) # Pretty sure this was a bug. No need to write it when it's externally generated.
-        f.close()
-
 
         pqr_filename = self.getPqrFilename()
         size = psize.Psize()
-        size.setConstant('gmemceil', int(self.max_mem_allowed.getvalue()))
+        size.setConstant('gmemceil', self.model.max_mem_allowed)
         size.runPsize(pqr_filename)
         coarse_dim = size.getCoarseGridDims()  # cglen
         fine_dim = size.getFineGridDims()  # fglen
@@ -170,18 +144,15 @@ class PSizeGridController(BaseGridController):
         center = size.getCenter()  # cgcent and fgcent
         _log.info("APBS's psize.py was used to calculated grid dimensions")
 
-        fine_grid_pts = self.correct_fine_grid(fine_grid_pts, max_mem_allowed)
+        fine_grid_pts = self.correct_fine_grid()
         self.update_grid_xyz(coarse_dim, fine_dim, center, fine_grid_pts)
-        except util.NoPDBException:
-            raise util.PluginDialogException("Please set a temporary PDB file location.")
 
 
 class PluginGridController(BaseGridController):
     def set_grid_params(self):
         # First, we need to get the dimensions of the molecule
-        sel = self.selection.getvalue()
-        sel = f"(({sel}) or (neighbor ({sel}) and hydro))"
-        model = pymol.cmd.get_model(sel)
+        sel = self.pymol_cmd.pymol_selection
+        model = self.pymol_cmd.get_model(sel)
         mins = [None, None, None]
         maxs = [None, None, None]
         for a in model.atom:
@@ -238,7 +209,7 @@ class PluginGridController(BaseGridController):
         _log.info("mult_fac: ", mult_fac)
         _log.info("fine_grid_pts: ", fine_grid_pts)
 
-        fine_grid_pts = self.correct_fine_grid(fine_grid_pts, max_mem_allowed)
+        fine_grid_pts = self.correct_fine_grid()
         self.update_grid_xyz(coarse_dim, fine_dim, center, fine_grid_pts)
 
 # ------------------------------------------------------------------------------

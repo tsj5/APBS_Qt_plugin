@@ -10,36 +10,35 @@ import shlex
 
 _log = logging.getLogger(__name__)
 
-import pymol.cmd as pymol_cmd
-import pymol.Qt.QtCore as QtCore
 import util
 
 # ------------------------------------------------------------------------------
 # Models
 
-@util.attrs_define_w_signals
+@util.attrs_define
 class PQRBaseModel(util.BaseModel):
     """Fields defining config state shared by all PQRModels.
     """
     pqr_out_file: pathlib.Path
-    cleanup_pqr: bool
+    clean_pqr: bool
 
-@util.attrs_define_w_signals
+@util.attrs_define
 class PPQRDB2PQRModel(PQRBaseModel):
     """Config state for generating a PQR file using the pdb2pqr binary.
     """
     pymol_selection: str
     pdb2pqr_path: pathlib.Path
+    pdb2pqr_flags: str
     pdb_file: pathlib.Path
 
-@util.attrs_define_w_signals
+@util.attrs_define
 class PQRPyMolModel(PQRBaseModel):
     """Fields defining config state for generating a PQR file using PyMol.
     """
     pymol_selection: str
     add_hs: bool
 
-@util.attrs_define_w_signals
+@util.attrs_define
 class PQRPreExistingModel(PQRBaseModel):
     """Fields defining config state for using a pre-existing PQR file.
     """
@@ -48,29 +47,34 @@ class PQRPreExistingModel(PQRBaseModel):
 # ------------------------------------------------------------------------------
 # Controllers
 
-class BasePQRController():
+class BasePQRController(util.BaseController):
     """Base class with common methods for all implementations of PQR file generation.
     """
-    @staticmethod
+    def __init__(self, model, view, pymol_controller):
+        super(BasePQRController, self).__init__(model, view)
+        self.pymol_cmd = pymol_controller
+
     def write_selection_to_file(self, sel, path):
         """Write the state of selection `sel` to a text file at `path`. File
         format is set automatically from extension.
         """
-        temp_mol_obj = pymol_cmd.get_unused_name()
-        pymol_cmd.create(temp_mol_obj, sel)
+        temp_mol_obj = self.pymol_cmd.get_unused_name()
+        self.pymol_cmd.create(temp_mol_obj, sel)
 
         # Make sure that everything fits into the correct columns (rounding)
-        pymol_cmd.alter_state(1, 'all', '(x,y,z)=float("%.3f"%x),float("%.3f"%y),float("%.3f"%z)')
+        self.pymol_cmd.alter_state(
+            1, 'all', '(x,y,z)=float("%.3f"%x),float("%.3f"%y),float("%.3f"%z)'
+        )
         # Get rid of chain, occupancy and b-factor information
-        pymol_cmd.alter(temp_mol_obj, 'chain=""')
-        pymol_cmd.alter(temp_mol_obj, 'b=0')
-        pymol_cmd.alter(temp_mol_obj, 'q=0')
+        self.pymol_cmd.alter(temp_mol_obj, 'chain=""')
+        self.pymol_cmd.alter(temp_mol_obj, 'b=0')
+        self.pymol_cmd.alter(temp_mol_obj, 'q=0')
 
-        pymol_cmd.save(path, temp_mol_obj)
-        pymol_cmd.delete(temp_mol_obj)
+        self.pymol_cmd.save(path, temp_mol_obj)
+        self.pymol_cmd.delete(temp_mol_obj)
 
     @staticmethod
-    def clean_pqr_columns(self, pqr_txt):
+    def clean_pqr_columns(pqr_txt):
         """Cleanup on contents of generated PQR files.
 
         pdb2pqr will happily write out a file where the coordinate
@@ -93,19 +97,18 @@ class PreExistingPQRController(BasePQRController):
     """Logic for using a pre-existing PQR file.
     """
     def write_PQR_file(self):
-        if self.getvalue(clean_pqr):
-            with open(pqr_filename, 'a+') as f:
-                pqr_text = f.read()
-                pqr_text = self.clean_pqr_columns(pqr_text)
-                f.seek(0)
-                f.write(pqr_text)
-                f.truncate()
-
+        if self.model.clean_pqr:
+            with open(self.model.pqr_in_file, 'r') as f_in:
+                pqr_text = f_in.read()
+            pqr_text = self.clean_pqr_columns(pqr_text)
+            with open(self.model.pqr_out_file, 'r') as f_out:
+                f_out.write(pqr_text)
 
 class PDB2PQRController(BasePQRController):
     """Logic for generating a PQR file using the pdb2pqr binary.
     """
-    def get_unassigned_atoms(self, pqr_txt):
+    @staticmethod
+    def get_unassigned_atoms(pqr_txt):
         """
         Return string of unassigned atoms, identified via warning text in comments
         in output.
@@ -118,25 +121,15 @@ class PDB2PQRController(BasePQRController):
         """
         _log.debug("GENERATING PQR FILE via PDB2PQR")
         # First, generate a PDB file
-        pdb_filename = self.pymol_generated_pdb_filename.getvalue()
-        try:
-            _log.info(f"Erasing contents of {pdb_filename} in order to generate new PDB file")
-            f = open(pdb_filename, 'w')
-            f.close()
-        except:
-            raise util.PluginDialogException("Please set a temporary PDB file location "
-                "that you have permission to edit")
-
-        sel = "((%s) or (neighbor (%s) and hydro))" % (
-            self.selection.getvalue(), self.selection.getvalue())
-
+        pdb_filename = self.model.pdb_file
+        sel = self.pymol_cmd.pymol_selection
         self.write_selection_to_file(sel, pdb_filename)
 
         # Now, convert the generated file.
-        args = [self.pdb2pqr.getvalue(),
-                ] + shlex.split(self.pdb2pqr_options.getvalue()) + [
+        args = [self.model.pdb2pqr_path,
+                ] + shlex.split(self.model.pdb2pqr_flags) + [
                             pdb_filename,
-                            self.pymol_generated_pqr_filename.getvalue(),
+                            self.self.model.pqr_out_file.getvalue(),
         ]
         try:
             args = ' '.join(map(str, args))
@@ -156,25 +149,27 @@ class PDB2PQRController(BasePQRController):
             _log.warning(sys.exc_info())
             retval = 1
         if retval != 0:
-            raise util.PluginDialogException(f"Could not run pdb2pqr: {self.pdb2pqr.getvalue()} "
+            raise util.PluginDialogException(f"Could not run pdb2pqr: {self.model.pdb2pqr_path} "
                 f"{args}\n\nIt returned {retval}.\nCheck the PyMOL external GUI window "
                 "for more information.\n"
             )
 
-        if self.getvalue(clean_pqr):
+        pqr_filename = self.model.pqr_out_file
+        if self.model.clean_pqr:
             with open(pqr_filename, 'a+') as f:
                 pqr_text = f.read()
                 pqr_text = self.clean_pqr_columns(pqr_text)
+                unassigned_atoms = self.get_unassigned_atoms(pqr_text)
                 f.seek(0)
                 f.write(pqr_text)
                 f.truncate()
         else:
             with open(pqr_filename, 'r') as f:
                 pqr_text = f.read()
+                unassigned_atoms = self.get_unassigned_atoms(pqr_text)
 
-        unassigned_atoms = self.get_unassigned_atoms(pqr_txt)
         if unassigned_atoms:
-            pymol_cmd.select('unassigned', f"ID {unassigned_atoms}")
+            self.pymol_cmd.select('unassigned', f"ID {unassigned_atoms}")
             _log.warning(f"Unassigned atom IDs: {unassigned_atoms}")
             raise util.PluginDialogException(f"Unable to assign parameters for the "
                 f"{len(unassigned_atoms.split('+'))} atoms in selection 'unassigned'.\n"
@@ -200,41 +195,34 @@ class PQRPyMolController(BasePQRController):
         """
         _log.debug("GENERATING PQR FILE via PyMOL")
         try:
+            # chempy appears to be packaged with pymol
             from chempy.champ import assign
         except ModuleNotFoundError:
-            raise util.PluginDialogException("_write_pymol_pqr_file couldn't import chempy.champ.")
+            raise util.PluginDialogException("write_PQR_file couldn't import chempy.champ.")
 
         # CHAMP will break in many cases if retain_order is set. So,
         # we unset it here and reset it later. Note that it's fine to
         # reset it before things are written out.
-        ret_order = pymol_cmd.get('retain_order')
-        pymol_cmd.set('retain_order', 0)
+        ret_order = self.pymol_cmd.get('retain_order')
+        self.pymol_cmd.set('retain_order', 0)
 
         sel = self.selection.getvalue()
         sel = f"(({sel}) or (neighbor ({sel}) and hydro))"
-        pqr_filename = self.getPqrFilename()
-        try:
-            _log.debug(f"Erasing previous contents of {pqr_filename}")
-            f = open(pqr_filename, 'w')
-            f.close()
-        except Exception as exc:
-            raise util.PluginDialogException("Could not write PQR file.\n"
-                f"Please check that temporary PQR filename \"{pqr_filename}\" is valid."
-            )
 
         # PyMOL + champ == pqr
-        if self.radiobuttons.getvalue() == 'Use PyMOL generated PQR and PyMOL generated Hydrogens and termini':
-            pymol_cmd.remove('hydro and %s' % sel)
+        if self.model.add_hs:
+            self.pymol_cmd.remove('hydro and %s' % sel)
             assign.missing_c_termini(sel)
             assign.formal_charges(sel)
-            pymol_cmd.h_add(sel)
+            self.pymol_cmd.h_add(sel)
 
         assign.amber99(sel)
-        pymol_cmd.set('retain_order', ret_order)
+        self.pymol_cmd.set('retain_order', ret_order)
 
+        pqr_filename = self.model.pqr_out_file
         self.write_selection_to_file(sel, pqr_filename)
 
-        if self.getvalue(clean_pqr):
+        if self.get("clean_pqr"):
             with open(pqr_filename, 'a+') as f:
                 pqr_text = f.read()
                 pqr_text = self.clean_pqr_columns(pqr_text)
@@ -242,9 +230,9 @@ class PQRPyMolController(BasePQRController):
                 f.write(pqr_text)
                 f.truncate()
 
-        missed_count = pymol_cmd.count_atoms(f"({sel}) and flag 23")
+        missed_count = self.pymol_cmd.count_atoms(f"({sel}) and flag 23")
         if missed_count > 0:
-            pymol_cmd.select("unassigned", f"({sel}) and flag 23")
+            self.pymol_cmd.select("unassigned", f"({sel}) and flag 23")
             raise util.PluginDialogException(f"Unable to assign parameters for the {missed_count} "
                 "atoms in selection 'unassigned'.\nPlease either remove these unassigned atoms "
                 "and re-start the calculation\nor fix their parameters in the generated PQR file "
