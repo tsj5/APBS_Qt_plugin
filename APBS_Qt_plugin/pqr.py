@@ -96,6 +96,8 @@ class BasePQRController(util.BaseController):
 class PreExistingPQRController(BasePQRController):
     """Logic for using a pre-existing PQR file.
     """
+    _model_class = PQRPreExistingModel # autogenerate on_*_changed Slots
+
     def write_PQR_file(self):
         if self.model.clean_pqr:
             with open(self.model.pqr_in_file, 'r') as f_in:
@@ -107,6 +109,8 @@ class PreExistingPQRController(BasePQRController):
 class PDB2PQRController(BasePQRController):
     """Logic for generating a PQR file using the pdb2pqr binary.
     """
+    _model_class = PPQRDB2PQRModel # autogenerate on_*_changed Slots
+
     @staticmethod
     def get_unassigned_atoms(pqr_txt):
         """
@@ -183,6 +187,8 @@ class PDB2PQRController(BasePQRController):
 class PQRPyMolController(BasePQRController):
     """Logic for generating a PQR file using the pdb2pqr binary.
     """
+    _model_class = PQRPyMolModel # autogenerate on_*_changed Slots
+
     def write_PQR_file(self):
         """Generate a pqr file from pymol.
 

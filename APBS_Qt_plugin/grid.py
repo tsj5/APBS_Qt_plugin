@@ -117,9 +117,11 @@ class BaseGridController(util.BaseController):
         _log.info("\tcenter: (%5.3f,%5.3f,%5.3f)" % tuple(center))
         _log.info("\tfine grid points (%d,%d,%d)" % tuple(fine_grid_pts))
 
-class PSizeGridController(BaseGridController):
+class GridPSizeController(BaseGridController):
     """Logic used when grid parameters are set via APBS's psize.py.
     """
+    _model_class = GridPSizeModel # autogenerate on_*_changed Slots
+
     def import_psize(self):
         import imp
         f, fname, description = imp.find_module('psize', [os.path.split(self.psize.getvalue())[0]])
@@ -148,7 +150,9 @@ class PSizeGridController(BaseGridController):
         self.update_grid_xyz(coarse_dim, fine_dim, center, fine_grid_pts)
 
 
-class PluginGridController(BaseGridController):
+class GridPluginController(BaseGridController):
+    _model_class = GridPluginModel # autogenerate on_*_changed Slots
+
     def set_grid_params(self):
         # First, we need to get the dimensions of the molecule
         sel = self.pymol_cmd.pymol_selection

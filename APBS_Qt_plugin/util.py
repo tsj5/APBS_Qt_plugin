@@ -245,7 +245,32 @@ class MultiModel(PYQT_QOBJECT):
         else:
             object.__setattr__(self, name, value)
 
-class BaseController(PYQT_QOBJECT):
+class AutoSlotMetaclass(type(PYQT_QOBJECT)):
+    """Metaclass for dynamically associating PyQt Slots based on an associated Model.
+    Model class taken from a class attribute named `_model_class`.
+    """
+    def __new__(cls, name, bases, attrs_):
+        if '_model_class' not in attrs_:
+            return super().__new__(cls, name, bases, attrs_)
+        model_cls = attrs_['_model_class']
+        if not hasattr(model_cls, '__attrs_attrs__'):
+            return super().__new__(cls, name, bases, attrs_)
+
+        for f in model_cls.__attrs_attrs__:
+            private_name = f.name # _attr_field_transformer remapped names
+            public_name = PropertyWrapper._public_from_private_name(private_name)
+            signal_name = PropertyWrapper._signal_from_public_name(public_name)
+            signal_type = getattr(model_cls, public_name).signal_type
+            method_name = 'on'+signal_name
+
+            @PYQT_SLOT(signal_type)
+            def _slot_with_dummy_name(self, value):
+                setattr(self.model, public_name, value)
+
+            attrs_[method_name] = _slot_with_dummy_name
+        return super().__new__(cls, name, bases, attrs_)
+
+class BaseController(PYQT_QOBJECT, metaclass = AutoSlotMetaclass):
     """Base class for our Controller classes.
     """
     def __init__(self, model, view):

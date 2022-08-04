@@ -85,6 +85,8 @@ class APBSModel(util.BaseModel):
 # Controller
 
 class APBSController(util.BaseController):
+    _model_class = APBSModel # autogenerate on_*_changed Slots
+
     _file_template = string.Template(textwrap.dedent("""
         # Note that most of the comments here were taken from sample
         # input files that came with APBS.  You can find APBS at
