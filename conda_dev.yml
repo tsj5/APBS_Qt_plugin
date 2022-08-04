@@ -1,0 +1,24 @@
+name: APBS_Qt_Plugin_dev
+channels:
+- schrodinger
+- conda-forge
+- defaults
+dependencies:
+# contents of schrodinger/pymol-bundle,
+# with incentive pymol replaced with pymol-open-source
+- pymol-open-source>=2.6.0a,<3.0a0
+- apbs
+- pdb2pqr>=2.1.2*
+- pycollada
+- biopython
+- collada2gltf
+- pymol-web-examples>=2.4
+- mengine
+- mpeg_encode
+- pykerberos
+
+- attrs
+# debug and test
+- jupyterlab
+- black
+- pytest
