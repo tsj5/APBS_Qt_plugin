@@ -10,6 +10,14 @@ The APBS (Adaptive Poisson-Boltzmann Solver) Tools plugin is used to compute mac
 
 The current version of the plugin (version 2.1) was written against the `tkinter` GUI library used in PyMOL 1.x; version 2.x of PyMOL migrated to PyQt. There is [legacy support](https://pymolwiki.org/index.php/PluginArchitecture#init_plugin) for `tkinter`-based plugins (not implemented in the APBS Tools plugin), but I wanted to take this as an opportunity to update it to PyQt.
 
+## Design considerations
+
+I've attempted to reorganize the code along the lines of the (hierarchical) Model-View-Controller pattern. This is *absolutely* overkill for an application whose scope is this small, but I wanted to use the project as a way to explore coding practices that scale to large applications.
+
+At least subjectively, this has felt like "going against the grain" of PyQt's intentions. Qt's use of Model/View terminology refers to something subtantively different, as clarified in [this SO post](https://stackoverflow.com/questions/5543198/why-qt-is-misusing-model-view-terminology). UI widgets operate according to an event-driven paradigm using [signals and slots](https://doc.qt.io/qtforpython/overviews/signalsandslots.html), but neither PyQt's `*Model` objects or the base data types wrapped from C++ Qt have predefined signals or slots: these need to be defined manually on the Model class (as in [this example](https://stackoverflow.com/a/26699122)), which results in boilerplate code and redundant definitions.
+
+The solution I've used here (perhaps the most novel part of this project) is to combine a solution proposed [here](https://stackoverflow.com/a/66266877) with the [attrs](https://www.attrs.org/en/stable/) package to automate defintion of signals for Model classes. 
+
 ## Credits
 
 The original APBS Tools plugin was written by Michael G. Lerner in 2009, with contributions from Heather A. Carlson and Warren L. DeLano. The current version is available [here](https://github.com/Pymol-Scripts/Pymol-script-repo/blob/master/plugins/apbsplugin.py).
@@ -20,6 +28,6 @@ Citation for `apbs`:
 &nbsp;Baker NA, Sept D, Joseph S, Holst MJ, McCammon JA. *Electrostatics of nanosystems: application to microtubules and the ribosome*. Proc. Natl. Acad. Sci. USA **98**, 10037-10041 (2001); [doi/10.1073/pnas.181342398](https://doi.org/10.1073/pnas.181342398); PMID: 11517324; PMCID: [PMC56910](http://www.ncbi.nlm.nih.gov/pmc/articles/pmc56910/).
 
 Citation for `pdb2pqr`:
-&nbsp;Dolinsky TJ, Nielsen JE, McCammon JA, Baker NA. *PDB2PQR: an automated pipeline for the setup, execution, and analysis of Poisson-Boltzmann electrostatics calculations.* Nucleic Acids Research *32* W665-W667 (2004). [doi/10.1093/nar/gkh381](10.1093/nar/gkh381); PMID: 15215472; PMCID: [PMC441519](http://www.ncbi.nlm.nih.gov/pmc/articles/pmc441519/).
+&nbsp;Dolinsky TJ, Nielsen JE, McCammon JA, Baker NA. *PDB2PQR: an automated pipeline for the setup, execution, and analysis of Poisson-Boltzmann electrostatics calculations.* Nucleic Acids Research **32** W665-W667 (2004). [doi/10.1093/nar/gkh381](10.1093/nar/gkh381); PMID: 15215472; PMCID: [PMC441519](http://www.ncbi.nlm.nih.gov/pmc/articles/pmc441519/).
 
 
