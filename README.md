@@ -10,6 +10,21 @@ The APBS (Adaptive Poisson-Boltzmann Solver) Tools plugin is used to compute mac
 
 The current version of the plugin (version 2.1) was written against the `tkinter` GUI library used in PyMOL 1.x; version 2.x of PyMOL migrated to PyQt. There is [legacy support](https://pymolwiki.org/index.php/PluginArchitecture#init_plugin) for `tkinter`-based plugins (not implemented in the APBS Tools plugin), but I wanted to take this as an opportunity to update it to PyQt.
 
+## Installation
+
+Since development is still in progress, currently the only supported installation method is through conda. If conda isn't installed, download [Miniconda3](https://docs.conda.io/en/latest/miniconda.html).
+
+If you're installing on an arm-based mac, you'll need
+```
+export CONDA_SUBDIR="osx-64"
+```
+since arm-based builds of `apbs` aren't available on conda (and my attempts to build from source have failed so far.) Note that conda packages for `apbs` have fallen behind tagged releases.
+
+Then do
+```
+conda env create -f=conda.yml; conda activate APBS_Qt_Plugin
+```
+
 ## Design considerations
 
 I've attempted to reorganize the code along the lines of the (hierarchical) Model-View-Controller pattern. This is *absolutely* overkill for an application whose scope is this small, but I wanted to use the project as a way to explore coding practices that scale to large applications.
