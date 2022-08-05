@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>apbs_dialog</class>
+ <widget class="QDialog" name="apbs_dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>388</width>
+    <height>609</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Options for APBS input configuration.
+See the &quot;APBS Template&quot; tab to edit how these parameters are passed to APBS.</string>
+       </property>
+       <property name="textFormat">
+        <enum>Qt::RichText</enum>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame">
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="1" column="0">
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="3" column="1" alignment="Qt::AlignVCenter">
+           <widget class="QLineEdit" name="solvent_r_lineEdit"/>
+          </item>
+          <item row="6" column="1" alignment="Qt::AlignVCenter">
+           <widget class="QComboBox" name="bc_comboBox"/>
+          </item>
+          <item row="2" column="1" alignment="Qt::AlignVCenter">
+           <widget class="QLineEdit" name="solvent_eps_lineEdit"/>
+          </item>
+          <item row="1" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Protein dielectric:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="buddy">
+             <cstring>protein_eps_lineEdit</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>System temperature:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="buddy">
+             <cstring>sys_temp_lineEdit</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0" alignment="Qt::AlignRight">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Vacc sphere density
+(grid points/A^2):</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="buddy">
+             <cstring>vacc_lineEdit</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Boundary condition:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="buddy">
+             <cstring>bc_comboBox</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Solvent radius:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="buddy">
+             <cstring>solvent_r_lineEdit</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1" alignment="Qt::AlignVCenter">
+           <widget class="QComboBox" name="mode_comboBox"/>
+          </item>
+          <item row="4" column="1" alignment="Qt::AlignVCenter">
+           <widget class="QLineEdit" name="vacc_lineEdit"/>
+          </item>
+          <item row="0" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Mode:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="buddy">
+             <cstring>mode_comboBox</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Solvent dielectric:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="buddy">
+             <cstring>solvent_eps_lineEdit</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1" alignment="Qt::AlignVCenter">
+           <widget class="QComboBox" name="charge_disc_comboBox"/>
+          </item>
+          <item row="7" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Charge disc method:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="buddy">
+             <cstring>charge_disc_comboBox</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1" alignment="Qt::AlignVCenter">
+           <widget class="QLineEdit" name="sys_temp_lineEdit"/>
+          </item>
+          <item row="1" column="1" alignment="Qt::AlignVCenter">
+           <widget class="QLineEdit" name="protein_eps_lineEdit"/>
+          </item>
+          <item row="11" column="0" colspan="2">
+           <widget class="QTableWidget" name="ions_tableWidget">
+            <attribute name="horizontalHeaderDefaultSectionSize">
+             <number>58</number>
+            </attribute>
+            <row>
+             <property name="text">
+              <string>Conc (M)</string>
+             </property>
+            </row>
+            <row>
+             <property name="text">
+              <string>Radius (A)</string>
+             </property>
+            </row>
+            <column>
+             <property name="text">
+              <string>(-2)</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>(-1)</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>(+1)</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>(+2)</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+          <item row="8" column="0" colspan="2" alignment="Qt::AlignLeft|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>Surface calculation method:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="buddy">
+             <cstring>surf_calc_comboBox</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0" colspan="2" alignment="Qt::AlignVCenter">
+           <widget class="QComboBox" name="surf_calc_comboBox"/>
+          </item>
+          <item row="10" column="0" colspan="2">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Ion parameters:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+            <property name="buddy">
+             <cstring>ions_tableWidget</cstring>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDialogButtonBox" name="dialog_buttons">
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

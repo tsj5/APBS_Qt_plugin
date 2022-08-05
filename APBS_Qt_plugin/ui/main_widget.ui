@@ -6,19 +6,373 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>448</width>
-    <height>550</height>
+    <width>634</width>
+    <height>857</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout"/>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <layout class="QFormLayout" name="formLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Selection:</string>
+         </property>
+         <property name="textFormat">
+          <enum>Qt::PlainText</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="selection_comboBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="editable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QFrame" name="pqr_frame">
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="1" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Method:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" alignment="Qt::AlignVCenter">
+           <widget class="QCheckBox" name="pqr_prepare_mol_checkBox">
+            <property name="text">
+             <string>Prepare Molecule</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1" colspan="2" alignment="Qt::AlignVCenter">
+           <widget class="QLineEdit" name="pqr_output_mol_lineEdit"/>
+          </item>
+          <item row="3" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Output Molecule Object:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="2" column="0" colspan="3">
+           <widget class="QStackedWidget" name="pqr_method_stackedWidget">
+            <widget class="Pdb2pqrWidget" name="page_pdb2pqr"/>
+            <widget class="PqrPyMolWidget" name="page_pymol"/>
+           </widget>
+          </item>
+          <item row="1" column="1" colspan="2">
+           <widget class="QComboBox" name="pqr_method_comboBox"/>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="apbs_frame">
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="2" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Grid Spacing (A):</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Focus Selection (optional):</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" alignment="Qt::AlignVCenter">
+           <widget class="QCheckBox" name="apbs_calculate_checkBox">
+            <property name="text">
+             <string>Calculate Map with APBS</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1" colspan="2" alignment="Qt::AlignVCenter">
+           <widget class="QLineEdit" name="apbs_outputmap_lineEdit"/>
+          </item>
+          <item row="1" column="1" colspan="2" alignment="Qt::AlignVCenter">
+           <widget class="QLineEdit" name="apbs_focus_lineEdit"/>
+          </item>
+          <item row="0" column="2" alignment="Qt::AlignVCenter">
+           <widget class="QToolButton" name="apbs_options_button">
+            <property name="font">
+             <font>
+              <pointsize>13</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Options...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="3" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Output Map Object:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1" alignment="Qt::AlignVCenter">
+           <widget class="QDoubleSpinBox" name="apbs_finegrid_spinBox"/>
+          </item>
+          <item row="2" column="2" alignment="Qt::AlignVCenter">
+           <widget class="QToolButton" name="apbs_grid_options_button">
+            <property name="font">
+             <font>
+              <pointsize>13</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Options...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="viz_frame">
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="2" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Map:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="4" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Output Ramp:</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" alignment="Qt::AlignVCenter">
+           <widget class="QCheckBox" name="viz_surface_checkBox">
+            <property name="text">
+             <string>Molecular Surface Visualization</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="3" alignment="Qt::AlignVCenter">
+           <widget class="QComboBox" name="viz_method_comboBox"/>
+          </item>
+          <item row="2" column="1" colspan="2" alignment="Qt::AlignVCenter">
+           <widget class="QComboBox" name="viz_map_comboBox">
+            <property name="editable">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Range: +/-</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::PlainText</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="3" alignment="Qt::AlignLeft|Qt::AlignVCenter">
+           <widget class="QLabel" name="label_10">
+            <property name="font">
+             <font>
+              <italic>true</italic>
+             </font>
+            </property>
+            <property name="text">
+             <string>Projects the electrostatic potential onto the molecular surface</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::RichText</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1" alignment="Qt::AlignVCenter">
+           <widget class="QDoubleSpinBox" name="viz_range_spinBox"/>
+          </item>
+          <item row="4" column="1" colspan="2" alignment="Qt::AlignVCenter">
+           <widget class="QLineEdit" name="viz_ramp_lineEdit"/>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="other_viz_frame">
+       <layout class="QGridLayout" name="gridLayout_8">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="0" column="2" alignment="Qt::AlignVCenter">
+           <widget class="QToolButton" name="other_viz_options_button">
+            <property name="font">
+             <font>
+              <pointsize>13</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Options...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <spacer name="horizontalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="0" alignment="Qt::AlignVCenter">
+           <widget class="QCheckBox" name="other_viz_checkBox">
+            <property name="text">
+             <string>Other Visualizations</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>Pdb2pqrWidget</class>
+   <extends>QWidget</extends>
+   <header>pdb2pqrwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PqrPyMolWidget</class>
+   <extends>QWidget</extends>
+   <header>pqrpymolwidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
