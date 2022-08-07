@@ -143,7 +143,9 @@ class PropertyWrapper(PYQT_PROPERTY):
     change.
     """
     def __init__(self, type_, name, notify):
-        super().__init__(type_, self.getter, self.setter, notify=notify)
+        # NB: pyqtProperty doesn't do anything with .notify; still need to
+        # .emit() the signal manually
+        super(PropertyWrapper, self).__init__(type_, self.getter, self.setter, notify=notify)
         self.name = name
         self.signal_type = type_
 
@@ -179,7 +181,7 @@ _AUTOSIGNAL_TYPE_COERCE = {
     enum.Enum: int
 }
 
-class AutoSignalMetaclass(type(PYQT_QOBJECT)):
+class AutoSignalSlotMetaclass(type(PYQT_QOBJECT)):
     """Metaclass for dynamically associating PyQt Properties and Signals with
     attrs fields.
     """
@@ -192,15 +194,26 @@ class AutoSignalMetaclass(type(PYQT_QOBJECT)):
         for f in attrs_['__attrs_attrs__']:
             signal_type = _AUTOSIGNAL_TYPE_COERCE.get(f.type, f.type)
             p = PropertyNames.from_private_name(f.name) # _attr_field_transformer remapped names
-            signal = PYQT_SIGNAL(signal_type, name=p.signal_name)
-            attrs_[p.signal_name] = signal
-            attrs_[p.name] = PropertyWrapper(type_=signal_type, name=p.name, notify=signal)
+            if p.signal_name not in attrs_:
+                # auto-generate signal
+                signal = PYQT_SIGNAL(signal_type, name=p.signal_name)
+                attrs_[p.signal_name] = signal
+                attrs_[p.name] = PropertyWrapper(type_=signal_type, name=p.name, notify=signal)
+
+            if p.slot_name not in attrs_:
+                # auto-generate. Each slot has to be a unique callable, so we
+                # have to define them because we're using a descriptor for attribute
+                # access
+                @PYQT_SLOT(signal_type)
+                def _dummy_slot(self, value):
+                    setattr(self, p.name, value)
+                attrs_[p.slot_name] = _dummy_slot
 
         # hacky but necessary way to sync up associated Views with the Model. Model
         # needs to be instantiated before it's connect()ed to views, but this means
         # views don't know about inital values of model fields. To fix this, provide
         # a method to manually fire all _*_changed signals for all model fields.
-        def _on_connect(self):
+        def _refresh(self):
             cls_ = type(self)
             for f in attrs.fields(cls_):
                 p = PropertyNames.from_private_name(f.name) # _attr_field_transformer remapped names
@@ -208,29 +221,23 @@ class AutoSignalMetaclass(type(PYQT_QOBJECT)):
                     # signals are class attributes BUT need to call emit() on the instance
                     value = getattr(self, p.name)
                     getattr(self, p.signal_name).emit(value)
-        attrs_["on_connect"] = _on_connect
+        attrs_["refresh"] = _refresh
 
         return super().__new__(cls, name, bases, attrs_)
 
 
-class BaseModel(PYQT_QOBJECT, metaclass = AutoSignalMetaclass):
+class BaseModel(PYQT_QOBJECT, metaclass = AutoSignalSlotMetaclass):
     """Base class for our Model classes.
     """
     pass
 
+@attrs_define
 class MultiModel(PYQT_QOBJECT):
     """Wrapper for a collection of Models: maintains state of all models, but
     attributes are only looked up on the currently active Model.
     """
-    _multimodel_index_changed = PYQT_SIGNAL(int)
-
-    def __init__(self, models):
-        super(MultiModel, self).__init__()
-        self._multimodel_index = 0
-        self.multimodel_index = PropertyWrapper(
-            type_=int, name="multimodel_index", notify=self._multimodel_index_changed
-        )
-        self._model_state = models
+    multimodel_index: int = 0
+    models: list = attrs.Factory(list)
 
     def __getattr__(self, name):
         """Pass through all attribute access to the currently selected Model.
@@ -239,7 +246,7 @@ class MultiModel(PYQT_QOBJECT):
             # Throws exception if not in prototype chain
             return object.__getattribute__(self, name)
         except AttributeError:
-            return getattr(self._model_state[self.multimodel_index], name)
+            return getattr(self.models[self.multimodel_index], name)
 
     def __setattr__(self, name, value):
         """Pass through all attribute access to the currently selected Model.
@@ -249,59 +256,12 @@ class MultiModel(PYQT_QOBJECT):
             _ = object.__getattribute__(self, name)
         except AttributeError:
             try:
-                setattr(self._model_state[self.multimodel_index], name, value)
+                setattr(self.models[self.multimodel_index], name, value)
             except Exception:
                 raise AttributeError(name)
         else:
             object.__setattr__(self, name, value)
 
-class AutoSlotMetaclass(type(PYQT_QOBJECT)):
-    """Metaclass for dynamically associating PyQt Slots based on an associated Model.
-    Model class taken from a class attribute named `_model_class`.
-    """
-    def __new__(cls, name, bases, attrs_):
-        if '_model_class' not in attrs_:
-            return super().__new__(cls, name, bases, attrs_)
-        model_cls = attrs_['_model_class']
-        if not hasattr(model_cls, '__attrs_attrs__'):
-            return super().__new__(cls, name, bases, attrs_)
-
-        for f in model_cls.__attrs_attrs__:
-            p = PropertyNames.from_private_name(f.name) # _attr_field_transformer remapped names
-            signal_type = getattr(model_cls, p.name).signal_type
-
-            @PYQT_SLOT(signal_type)
-            def _slot_with_dummy_name(self, value):
-                setattr(self.model, p.name, value)
-
-            attrs_[p.slot_name] = _slot_with_dummy_name
-        return super().__new__(cls, name, bases, attrs_)
-
-class BaseController(PYQT_QOBJECT, metaclass = AutoSlotMetaclass):
-    """Base class for our Controller classes.
-    """
-    def __init__(self, model, view):
-        super(BaseController, self).__init__()
-        self.model = model
-        self.view = view
-
-class BaseWidgetView(QWidget):
-    def __init__(self, ui_cls):
-        super(BaseWidgetView, self).__init__()
-        self._ui = ui_cls()
-        self._ui.setupUi(self)
-
-class BaseDialogView(QDialog):
-    def __init__(self, ui_cls):
-        super(BaseDialogView, self).__init__()
-        self._ui = ui_cls()
-        self._ui.setupUi(self)
-
-class BaseGroupBoxView(QGroupBox):
-    def __init__(self, ui_cls):
-        super(BaseGroupBoxView, self).__init__()
-        self._ui = ui_cls()
-        self._ui.setupUi(self)
 
 # ----------------------------------------------------------------------
 
