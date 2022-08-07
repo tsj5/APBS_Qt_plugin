@@ -2,6 +2,7 @@
 Utility classes and functions.
 """
 import attrs
+import collections
 import enum
 import functools
 import logging
@@ -111,6 +112,32 @@ class MakeNotified:
 
 _MAKE_NOTIFIED = MakeNotified()
 
+class PropertyNames(collections.namedtuple(
+    'PropertyNames',
+    ('name', 'private_name', 'signal_name', 'slot_name')
+)):
+    """Use rigid naming conventions, defined in one place, for the naming of
+    auto-generated Signals, Slots and other attributes.
+    """
+    __slots__ = ()
+
+    @classmethod
+    def from_name(cls, name):
+        # the lstrip() is a hack to deal with attribute redefinition on class
+        # inheritance; don't want to auto-generate x, _x, __x, ___x etc.
+        name = name.lstrip('_')
+        return cls(
+            name = name,
+            private_name = '_' + name,
+            signal_name = name + '_update',
+            slot_name = 'on_' + name + '_update'
+        )
+
+    @classmethod
+    def from_private_name(cls, private_name):
+        assert private_name.startswith('_')
+        return cls.from_name(cls, private_name)
+
 class PropertyWrapper(PYQT_PROPERTY):
     """Wrapper for pyqtProperty which automatically emits signal on field value
     change.
@@ -120,32 +147,15 @@ class PropertyWrapper(PYQT_PROPERTY):
         self.name = name
         self.signal_type = type_
 
-    # the lstrip() is a hack to deal with attribute redefinition on class
-    # inheritance; don't want to auto-generate x, _x, __x, ___x etc.
-    @staticmethod
-    def _private_from_public_name(name):
-        return '_' + name.lstrip('_')
-
-    @staticmethod
-    def _public_from_private_name(name):
-        assert name.startswith('_')
-        return name.lstrip('_')
-
-    @staticmethod
-    def _signal_from_public_name(name):
-        return '_' + name.lstrip('_') + '_changed'
-
-    @staticmethod
-    def _signal_from_private_name(name):
-        return '_' + name.lstrip('_') + '_changed'
-
     @property
     def private_name(self):
-        return self._private_from_public_name(self.name)
+        p = PropertyNames.from_name(self.name)
+        return p.private_name
 
     @property
     def signal_name(self):
-        return self._signal_from_public_name(self.name)
+        p = PropertyNames.from_name(self.name)
+        return p.signal_name
 
     def getter(self, instance):
         return getattr(instance, self.private_name)
@@ -181,12 +191,10 @@ class AutoSignalMetaclass(type(PYQT_QOBJECT)):
         # If we get here, attrs decorator has done its work -- need attrs slots=True!
         for f in attrs_['__attrs_attrs__']:
             signal_type = _AUTOSIGNAL_TYPE_COERCE.get(f.type, f.type)
-            private_name = f.name # _attr_field_transformer remapped names
-            public_name = PropertyWrapper._public_from_private_name(private_name)
-            signal_name = PropertyWrapper._signal_from_public_name(public_name)
-            signal = PYQT_SIGNAL(signal_type, name=signal_name)
-            attrs_[signal_name] = signal
-            attrs_[public_name] = PropertyWrapper(type_=signal_type, name=public_name, notify=signal)
+            p = PropertyNames.from_private_name(f.name) # _attr_field_transformer remapped names
+            signal = PYQT_SIGNAL(signal_type, name=p.signal_name)
+            attrs_[p.signal_name] = signal
+            attrs_[p.name] = PropertyWrapper(type_=signal_type, name=p.name, notify=signal)
 
         # hacky but necessary way to sync up associated Views with the Model. Model
         # needs to be instantiated before it's connect()ed to views, but this means
@@ -195,13 +203,11 @@ class AutoSignalMetaclass(type(PYQT_QOBJECT)):
         def _on_connect(self):
             cls_ = type(self)
             for f in attrs.fields(cls_):
-                private_name = f.name # _attr_field_transformer remapped names
-                public_name = PropertyWrapper._public_from_private_name(private_name)
-                signal_name = PropertyWrapper._signal_from_public_name(public_name)
-                if hasattr(cls_, signal_name):
+                p = PropertyNames.from_private_name(f.name) # _attr_field_transformer remapped names
+                if hasattr(cls_, p.signal_name):
                     # signals are class attributes BUT need to call emit() on the instance
-                    value = getattr(self, public_name)
-                    getattr(self, signal_name).emit(value)
+                    value = getattr(self, p.name)
+                    getattr(self, p.signal_name).emit(value)
         attrs_["on_connect"] = _on_connect
 
         return super().__new__(cls, name, bases, attrs_)
@@ -261,17 +267,14 @@ class AutoSlotMetaclass(type(PYQT_QOBJECT)):
             return super().__new__(cls, name, bases, attrs_)
 
         for f in model_cls.__attrs_attrs__:
-            private_name = f.name # _attr_field_transformer remapped names
-            public_name = PropertyWrapper._public_from_private_name(private_name)
-            signal_name = PropertyWrapper._signal_from_public_name(public_name)
-            signal_type = getattr(model_cls, public_name).signal_type
-            method_name = 'on'+signal_name
+            p = PropertyNames.from_private_name(f.name) # _attr_field_transformer remapped names
+            signal_type = getattr(model_cls, p.name).signal_type
 
             @PYQT_SLOT(signal_type)
             def _slot_with_dummy_name(self, value):
-                setattr(self.model, public_name, value)
+                setattr(self.model, p.name, value)
 
-            attrs_[method_name] = _slot_with_dummy_name
+            attrs_[p.slot_name] = _slot_with_dummy_name
         return super().__new__(cls, name, bases, attrs_)
 
 class BaseController(PYQT_QOBJECT, metaclass = AutoSlotMetaclass):
