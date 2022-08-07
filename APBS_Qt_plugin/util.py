@@ -10,6 +10,7 @@ import pathlib
 _log = logging.getLogger(__name__)
 
 import pymol.Qt.QtCore as QtCore
+from pymol.Qt.QtWidgets import QWidget, QDialog, QGroupBox
 
 # ------------------------------------------------------------------------------
 # Qt convenience classes
@@ -44,7 +45,11 @@ def _attr_field_transformer(cls, fields):
     return new_fields
 
 def attrs_define(cls=None, **deco_kwargs):
-    deco_kwargs.update({"slots":True, "field_transformer":_attr_field_transformer})
+    deco_kwargs.update({ # enforce default values for attrs class creation
+        "slots": True,
+        "kw_only": True,
+        "field_transformer":_attr_field_transformer
+    })
     if cls is None:
         # decorator called without arguments
         return functools.partial(attrs_define, **deco_kwargs)
@@ -52,7 +57,6 @@ def attrs_define(cls=None, **deco_kwargs):
     # attrs auto-generates an __init__ method; need to manually ensure that
     # super() is called.
     # https://www.attrs.org/en/stable/init.html#hooking-yourself-into-initialization
-    # TODO: way to hook up QObject parent attr
     def _pre_init(self):
         PYQT_QOBJECT.__init__(self)
     setattr(cls, "__attrs_pre_init__", _pre_init)
@@ -277,6 +281,24 @@ class BaseController(PYQT_QOBJECT, metaclass = AutoSlotMetaclass):
         super(BaseController, self).__init__()
         self.model = model
         self.view = view
+
+class BaseWidgetView(QWidget):
+    def __init__(self, ui_cls):
+        super(BaseWidgetView, self).__init__()
+        self._ui = ui_cls()
+        self._ui.setupUi(self)
+
+class BaseDialogView(QDialog):
+    def __init__(self, ui_cls):
+        super(BaseDialogView, self).__init__()
+        self._ui = ui_cls()
+        self._ui.setupUi(self)
+
+class BaseGroupBoxView(QGroupBox):
+    def __init__(self, ui_cls):
+        super(BaseGroupBoxView, self).__init__()
+        self._ui = ui_cls()
+        self._ui.setupUi(self)
 
 # ----------------------------------------------------------------------
 

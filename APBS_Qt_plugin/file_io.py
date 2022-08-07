@@ -1,97 +1,127 @@
 """
 Custom widgets for path open/save with additional validation logic.
-
 """
+import os.path
+# import pathlib # TODO
+import tempfile
 
 import logging
-import pathlib
-
 _log = logging.getLogger(__name__)
 
 import util
-import pymol.Qt.QtCore as QtCore
-import pymol.Qt.QtGui as QtGui
-import pymol.Qt.QtWidgets as QtWidgets
 
+import pymol.Qt.QtGui as QtGui
+from pymol.Qt.QtWidgets import QGroupBox
 from ui.custom_path_widget_ui import Ui_CustomPathWidget
 
 @util.attrs_define
-class PathModel(QtCore.QObject):
+class PathModelBase(util.PYQT_QOBJECT):
     """Base class for our Model classes.
     """
-    pass
+    path: str = None
+    is_valid: bool = False
 
-class CustomPathBase(QtWidgets.QGroupBox):
-    path_changed = QtCore.pyqtSignal(str)
+    def __attrs_post_init__(self):
+        if self.path is None:
+            # set path to temp path
+            pass
 
-    def __init__(self, parent=None):
-        super(CustomPathBase, self).__init__(parent)
-        self._ui = Ui_CustomPathWidget()
-        self._ui.setupUi(self)
+    def validate(self, new_path):
+        self.is_valid = True
+        if self.is_valid:
+            self.path = new_path
 
-    def setupUi(self,
-            widget_label="",
+class CustomPathBaseView(QGroupBox, Ui_CustomPathWidget):
+    def __init__(
+        self,
+        widget_label = "Path to file:",
+        dialog_caption = "Select path to file:",
+        dialog_filter = "All files (*.*)",
+        parent=None
+    ):
+        super(CustomPathBaseView, self).__init__(parent)
+        self.setupUi(self)
+        self.browse_label.setText(widget_label)
+        self.dialog_caption = dialog_caption
+        self.dialog_filter = dialog_filter
 
-        ):
-        self._ui.browse_label.setText(str(label_text))
+class CustomPathBaseController(util.PYQT_QOBJECT):
+    def __init__(self, model, view, parent=None):
+        super(CustomPathBaseController, self).__init__(parent)
+        self.model = model
+        self.view = view
 
-    # to be auto-connected
+        # view -> model
+        self.view.browse_toolButton.clicked.connect(self.on_browse_toolButton_clicked)
+        self.view.browse_lineEdit.textEdited.connect(self.on_browse_lineEdit_textEdited)
 
-    @QtCore.pyqtSlot()
-    def on_browse_lineEdit_textEdited(self, str_):
+        # model -> view
+        self.model.path_changed.connect(self.view.browse_lineEdit.setText)
+        self.model.is_valid_changed.connect(self.on_isvalid_changed)
+
+    @util.PYQT_SLOT(str)
+    def on_browse_lineEdit_textEdited(self, new_path):
+        # TODO
         pass
 
-    # to be connected by controller
-
-    @QtCore.pyqtSlot(bool)
-    def on_validated_changed(self, b):
+    @util.PYQT_SLOT(bool)
+    def on_isvalid_changed(self, b):
         if b:
             self._ui.validated_label.setText(' ')
+            self._ui.validated_label.setToolTip("")
         else:
             self._ui.validated_label.setText('\u26A0') # unicode caution
+            self._ui.validated_label.setToolTip("The currently specified path is invalid.")
 
-    @QtCore.pyqtSlot(str)
-    def on_path_changed(self, path):
-        self._ui.browse_lineEdit.setText(path)
+    @util.PYQT_SLOT()
+    def on_browse_toolButton_clicked(self):
+        raise NotImplementedError
 
-class CustomPathOpen(CustomPathBase):
+    def get_dialog_start_dir(self):
+        if self.model.is_valid:
+            return os.path.dirname(self.model.path)
+        else:
+            # start in home directory
+            return os.path.expanduser("~")
 
-    def setupUi(self,
-            widget_label="",
+# ------------------------------------------------------------------------------
 
-        ):
-        self._ui.browse_label.setText(str(label_text))
-
-    # to be auto-connected
-
-    @QtCore.pyqtSlot()
+class CustomPathOpenController(CustomPathBaseController):
+    @util.PYQT_SLOT()
     def on_browse_toolButton_clicked(self):
         new_path, _ = QtGui.QFileDialog.getOpenFileName(
             parent=self,
-            caption='Open file',
-            dir='.',
-            filter='Kicad PCB Files (*.kicad_pcb)'
+            caption=self.dialog_caption,
+            dir=self.get_dialog_start_dir(),
+            filter=self.dialog_filter
         )
         if new_path:
-            self._model.
-
-class CustomPathSave(CustomPathBase):
-    def setupUi(self,
-
-        ):
-        self._ui.validated_label.setText(' ') # assume valid
-        self._ui.browse_label.setText(str(label_text))
+            self.model.path = new_path
 
 
-    @QtCore.pyqtSlot()
+# ------------------------------------------------------------------------------
+
+@util.attrs_define
+class SavePathModel(PathModelBase):
+    is_tempfile: bool = True
+
+    def __attrs_post_init__(self):
+        if self.path is None:
+            # set path to temp path, TODO
+            pass
+
+class CustomPathSaveController(CustomPathBaseController):
+    @util.PYQT_SLOT()
     def on_browse_toolButton_clicked(self):
-        new_path, _ = QtGui.getSaveFileName(
+        new_path, _ = QtGui.QFileDialog.getSaveFileName(
             parent=self,
-            caption='Select output file',
-            dir='.',
-            filter='Kicad PCB Files (*.kicad_pcb)'
+            caption=self.dialog_caption,
+            dir=self.get_dialog_start_dir(),
+            filter=self.dialog_filter
         )
         if new_path:
-            self._model.
+            self.model.path = new_path
 
-
+    def open():
+        # TODO
+        pass
