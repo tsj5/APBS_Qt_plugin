@@ -82,6 +82,11 @@
      </item>
      <item row="0" column="2" alignment="Qt::AlignRight|Qt::AlignVCenter">
       <widget class="QToolButton" name="about_button">
+       <property name="font">
+        <font>
+         <pointsize>13</pointsize>
+        </font>
+       </property>
        <property name="text">
         <string>About...</string>
        </property>
@@ -96,6 +101,62 @@
         <attribute name="title">
          <string>Main</string>
         </attribute>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="0" column="0">
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="0" column="1" alignment="Qt::AlignVCenter">
+            <widget class="QComboBox" name="selection_comboBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Selection:</string>
+             </property>
+             <property name="textFormat">
+              <enum>Qt::PlainText</enum>
+             </property>
+             <property name="buddy">
+              <cstring>selection_comboBox</cstring>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="2">
+            <widget class="PQRGroupBoxView" name="pqr_groupBox">
+             <property name="title">
+              <string>PQR file generation</string>
+             </property>
+             <property name="flat">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="2">
+            <widget class="VizGroupBoxView" name="viz_groupBox">
+             <property name="title">
+              <string>Visualizations</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="2">
+            <widget class="ApbsGroupBoxView" name="apbs_groupBox">
+             <property name="title">
+              <string>Poisson-Boltzmann solver</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </widget>
        <widget class="QWidget" name="tab_template">
         <attribute name="title">
@@ -142,6 +203,24 @@
    <class>MainWidget</class>
    <extends>QWidget</extends>
    <header>mainwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PQRGroupBoxView</class>
+   <extends>QGroupBox</extends>
+   <header>pqrgroupbox.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ApbsGroupBoxView</class>
+   <extends>QGroupBox</extends>
+   <header>apbsgroupbox.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>VizGroupBoxView</class>
+   <extends>QGroupBox</extends>
+   <header>vizgroupbox.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
