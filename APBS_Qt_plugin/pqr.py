@@ -3,13 +3,17 @@ Model, view and controller for PQR file generation configuration.
 """
 import os
 import enum
-import logging
 import pathlib
 import re
 import shlex
 
+import logging
 _log = logging.getLogger(__name__)
 
+import pymol
+from pymol.Qt.QtWidgets import QGroupBox
+
+from ui.pqr_groupBox_ui import Ui_pqr_GroupBox
 import util
 
 # ------------------------------------------------------------------------------
@@ -19,40 +23,10 @@ import util
 class PQRBaseModel(util.BaseModel):
     """Fields defining config state shared by all PQRModels.
     """
+    pymol_cmd: pymol.PyMolModel
+    prepare_pqr: bool
     pqr_out_file: pathlib.Path
-    clean_pqr: bool
-
-@util.attrs_define
-class PPQRDB2PQRModel(PQRBaseModel):
-    """Config state for generating a PQR file using the pdb2pqr binary.
-    """
-    pymol_selection: str
-    pdb2pqr_path: pathlib.Path
-    pdb2pqr_flags: str
-    pdb_file: pathlib.Path
-
-@util.attrs_define
-class PQRPyMolModel(PQRBaseModel):
-    """Fields defining config state for generating a PQR file using PyMol.
-    """
-    pymol_selection: str
-    add_hs: bool
-
-@util.attrs_define
-class PQRPreExistingModel(PQRBaseModel):
-    """Fields defining config state for using a pre-existing PQR file.
-    """
-    pqr_in_file: pathlib.Path
-
-# ------------------------------------------------------------------------------
-# Controllers
-
-class BasePQRController(util.BaseController):
-    """Base class with common methods for all implementations of PQR file generation.
-    """
-    def __init__(self, model, view, pymol_controller):
-        super(BasePQRController, self).__init__(model, view)
-        self.pymol_cmd = pymol_controller
+    pqr_out_name: str = "prepared"
 
     def write_selection_to_file(self, sel, path):
         """Write the state of selection `sel` to a text file at `path`. File
@@ -93,23 +67,14 @@ class BasePQRController(util.BaseController):
         target_regex = re.compile(r'\1\2 \3 \4 \5')
         return re.sub(source_regex, target_regex, pqr_txt, flags=re.M)
 
-class PreExistingPQRController(BasePQRController):
-    """Logic for using a pre-existing PQR file.
+@util.attrs_define
+class PPQRDB2PQRModel(PQRBaseModel):
+    """Config state for generating a PQR file using the pdb2pqr binary.
     """
-    _model_class = PQRPreExistingModel # autogenerate on_*_changed Slots
-
-    def write_PQR_file(self):
-        if self.model.clean_pqr:
-            with open(self.model.pqr_in_file, 'r') as f_in:
-                pqr_text = f_in.read()
-            pqr_text = self.clean_pqr_columns(pqr_text)
-            with open(self.model.pqr_out_file, 'r') as f_out:
-                f_out.write(pqr_text)
-
-class PDB2PQRController(BasePQRController):
-    """Logic for generating a PQR file using the pdb2pqr binary.
-    """
-    _model_class = PPQRDB2PQRModel # autogenerate on_*_changed Slots
+    pdb2pqr_path: pathlib.Path
+    pdb_out_file: pathlib.Path
+    pdb2pqr_flags: str
+    ignore_warn: bool
 
     @staticmethod
     def get_unassigned_atoms(pqr_txt):
@@ -125,16 +90,12 @@ class PDB2PQRController(BasePQRController):
         """
         _log.debug("GENERATING PQR FILE via PDB2PQR")
         # First, generate a PDB file
-        pdb_filename = self.model.pdb_file
         sel = self.pymol_cmd.pymol_selection
-        self.write_selection_to_file(sel, pdb_filename)
+        self.write_selection_to_file(sel, self.pdb_out_file)
 
         # Now, convert the generated file.
-        args = [self.model.pdb2pqr_path,
-                ] + shlex.split(self.model.pdb2pqr_flags) + [
-                            pdb_filename,
-                            self.self.model.pqr_out_file.getvalue(),
-        ]
+        args = [self.pdb2pqr_path] + shlex.split(self.pdb2pqr_flags) \
+            + [self.pdb_out_file, self.pqr_out_file]
         try:
             args = ' '.join(map(str, args))
             _log.info("args are now converted to string: ", args)
@@ -153,14 +114,13 @@ class PDB2PQRController(BasePQRController):
             _log.warning(sys.exc_info())
             retval = 1
         if retval != 0:
-            raise util.PluginDialogException(f"Could not run pdb2pqr: {self.model.pdb2pqr_path} "
+            raise util.PluginDialogException(f"Could not run pdb2pqr: {self.pdb2pqr_path} "
                 f"{args}\n\nIt returned {retval}.\nCheck the PyMOL external GUI window "
                 "for more information.\n"
             )
 
-        pqr_filename = self.model.pqr_out_file
-        if self.model.clean_pqr:
-            with open(pqr_filename, 'a+') as f:
+        if self.prepare_pqr:
+            with open(self.pqr_out_file, 'a+') as f:
                 pqr_text = f.read()
                 pqr_text = self.clean_pqr_columns(pqr_text)
                 unassigned_atoms = self.get_unassigned_atoms(pqr_text)
@@ -168,7 +128,7 @@ class PDB2PQRController(BasePQRController):
                 f.write(pqr_text)
                 f.truncate()
         else:
-            with open(pqr_filename, 'r') as f:
+            with open(self.pqr_out_file, 'r') as f:
                 pqr_text = f.read()
                 unassigned_atoms = self.get_unassigned_atoms(pqr_text)
 
@@ -183,11 +143,11 @@ class PDB2PQRController(BasePQRController):
             )
         _log.debug("I WILL RETURN TRUE from pdb2pqr")
 
-
-class PQRPyMolController(BasePQRController):
-    """Logic for generating a PQR file using the pdb2pqr binary.
+@util.attrs_define
+class PQRPyMolModel(PQRBaseModel):
+    """Fields defining config state for generating a PQR file using PyMol.
     """
-    _model_class = PQRPyMolModel # autogenerate on_*_changed Slots
+    add_hs: bool = True
 
     def write_PQR_file(self):
         """Generate a pqr file from pymol.
@@ -212,29 +172,26 @@ class PQRPyMolController(BasePQRController):
         ret_order = self.pymol_cmd.get('retain_order')
         self.pymol_cmd.set('retain_order', 0)
 
-        sel = self.selection.getvalue()
+        sel = self.pymol_cmd.selection
         sel = f"(({sel}) or (neighbor ({sel}) and hydro))"
 
         # PyMOL + champ == pqr
-        if self.model.add_hs:
+        if self.add_hs:
             self.pymol_cmd.remove('hydro and %s' % sel)
             assign.missing_c_termini(sel)
             assign.formal_charges(sel)
             self.pymol_cmd.h_add(sel)
-
         assign.amber99(sel)
         self.pymol_cmd.set('retain_order', ret_order)
 
-        pqr_filename = self.model.pqr_out_file
-        self.write_selection_to_file(sel, pqr_filename)
+        self.write_selection_to_file(sel, self.pqr_out_file)
 
-        if self.get("clean_pqr"):
-            with open(pqr_filename, 'a+') as f:
-                pqr_text = f.read()
-                pqr_text = self.clean_pqr_columns(pqr_text)
-                f.seek(0)
-                f.write(pqr_text)
-                f.truncate()
+        with open(self.pqr_out_file, 'a+') as f:
+            pqr_text = f.read()
+            pqr_text = self.clean_pqr_columns(pqr_text)
+            f.seek(0)
+            f.write(pqr_text)
+            f.truncate()
 
         missed_count = self.pymol_cmd.count_atoms(f"({sel}) and flag 23")
         if missed_count > 0:
@@ -245,4 +202,55 @@ class PQRPyMolController(BasePQRController):
                 "and run the calculation\nusing the modified PQR file (select 'Use another PQR' in 'Main')."
             )
 
+
 # ------------------------------------------------------------------------------
+# Views
+
+class PQRGroupBoxView(QGroupBox, Ui_pqr_GroupBox):
+    def __init__(self, parent=None):
+        super(PQRGroupBoxView, self).__init__(parent)
+        self.setupUi(self)
+
+
+# ------------------------------------------------------------------------------
+# Controllers
+
+class PQRController(util.BaseController):
+    """Base class with common methods for all implementations of PQR file generation.
+    """
+    def __init__(self, pdb2pqr_model, pymol_model, view):
+        super(PQRController, self).__init__()
+        self.model = util.MultiModel(models = [pdb2pqr_model, pymol_model])
+        self.view = view
+
+        # populate Method comboBox
+        self.view.pqr_method_comboBox.clear()
+        self.view.pqr_method_comboBox.addItem("Using pdb2pqr")
+        self.view.pqr_method_comboBox.addItem("Using PyMol")
+        self.view.pqr_method_comboBox.setIndex(0)
+
+        # view -> multimodel
+        self.view.pqr_method_comboBox.currentIndexChanged.connect()
+
+        # multimodel -> view
+        self.model.multimodel_index_changed.connect(self.view.pqr_method_comboBoxsetCurrentIndex)
+
+        # view -> pdb2pqr_model
+        self.view.pqr_output_mol_lineEdit.textEdited.connect(pdb2pqr_model.pqr_out_name)
+
+        # pdb2pqr_model -> view
+        pdb2pqr_model.pqr_out_name_changed.connect(self.view.pqr_output_mol_lineEdit.setText)
+
+        # view -> pymol_model
+        self.view.pqr_output_mol_lineEdit.textEdited.connect(pymol_model.pqr_out_name)
+
+        # pymol_model -> view
+        pymol_model.pqr_out_name_changed.connect(self.view.pqr_output_mol_lineEdit.setText)
+
+    @util.PYQT_SLOT(bool)
+    def on_prepare_mol_changed(self, b):
+        if b:
+
+        else:
+
+

@@ -79,18 +79,9 @@ class APBSModel(util.BaseModel):
     # object, and the APBS calculation time. APBS default value is 10.0.
     sdens: float =10.0
 
-
-
-
-# ------------------------------------------------------------------------------
-# Controller
-
-class APBSController(util.BaseController):
-    _model_class = APBSModel # autogenerate on_*_changed Slots
-
     @staticmethod
-    def template_apbs_values(self, apbs_model):
-        return attrs.asdict(self.model) # BROKEN, need to re-munge field names
+    def template_apbs_values(self):
+        return attrs.asdict(self) # BROKEN, need to re-munge field names
 
     @staticmethod
     def template_grid_values(grid_model):
@@ -121,19 +112,30 @@ class APBSController(util.BaseController):
             apbs_template = string.Template(f.read())
         _log.debug("GOT THE APBS INPUT FILE")
 
-        if self.model.dx_filename.endswith('.dx'):
-            self.model.dx_filename = self.model.dx_filename[:-3]
+        if self.dx_filename.endswith('.dx'):
+            self.dx_filename = self.dx_filename[:-3]
 
         template_dict = dict()
         template_dict.update(self.template_grid_values(grid_model))
-        template_dict.update(self.template_apbs_values(self.model))
+        template_dict.update(self.template_apbs_values())
 
         apbs_input_text = apbs_template.substitute(template_dict)
         _log.debug("GOT THE APBS INPUT FILE")
 
         try:
-            with open(self.model.apbs_config_file, 'w') as f:
+            with open(self.apbs_config_file, 'w') as f:
                 f.write(apbs_input_text)
         except Exception:
-            raise util.PluginDialogException(f"Couldn't write file to  {self.model.apbs_config_file}.")
+            raise util.PluginDialogException(f"Couldn't write file to  {self.apbs_config_file}.")
 
+
+# ------------------------------------------------------------------------------
+# Controller
+
+class APBSController(util.BaseController):
+    _model_class = APBSModel # autogenerate on_*_changed Slots
+
+
+
+# ------------------------------------------------------------------------------
+# View

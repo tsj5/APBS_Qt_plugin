@@ -2,52 +2,31 @@
 Model, view and controller for grid generation configuration.
 """
 import os
-import logging
 import math
-import pathlib
 
+import logging
 _log = logging.getLogger(__name__)
 
+import pymol
 import util
 
 # ------------------------------------------------------------------------------
 # Models
 
+_FLOAT_MB = 1024. * 1024.
+
 @util.attrs_define
 class GridBaseModel(util.BaseModel):
     """Config state shared by all GridModels.
     """
+    pymol_cmd: pymol.PyMolModel
+
     coarse_dim: list
     fine_dim: list
     fine_grid_points: list
     center: list
 
     max_mem_allowed: int = 2500
-
-@util.attrs_define
-class GridPSizeModel(GridBaseModel):
-    """Config state for generating APBS grid parameters using psize.py (provided
-    as part of APBS.)
-    """
-    pass
-
-@util.attrs_define
-class GridPluginModel(GridBaseModel):
-    """Config state for generating APBS grid parameters using the plugin's logic.
-    """
-    pass
-
-# ------------------------------------------------------------------------------
-# Controllers
-
-_FLOAT_MB = 1024. * 1024.
-
-class BaseGridController(util.BaseController):
-    """Logic used in all GridControllers.
-    """
-    def __init__(self, model, view, pymol_controller):
-        super(BaseGridController, self).__init__(model, view)
-        self.pymol_cmd = pymol_controller
 
     @staticmethod
     def product_of_elts(vec):
@@ -61,17 +40,14 @@ class BaseGridController(util.BaseController):
     def mem_to_grid(mem):
         return int(mem * _FLOAT_MB / 200.)
 
-    def correct_fine_grid(self):
+    def correct_fine_grid(self, fine_grid_pts):
         """Coarsen fine grid if current value would use too much memory, as set
         by `max_mem_allowed`. `fine_grid_pts` is a 3-vector of `int`s.
         """
-        fine_grid_pts = self.model.fine_grid_pts
-        max_mem_allowed = self.model.max_mem_allowed
-
-        max_grid_points = self.mem_to_grid(max_mem_allowed)
+        max_grid_points = self.mem_to_grid(self.max_mem_allowed)
         _log.info(f"Estimated memory usage: {self.grid_to_mem(fine_grid_pts)} "
-            f"MB out of maximum allowed: {max_mem_allowed}")
-        if self.grid_to_mem(fine_grid_pts) < max_mem_allowed:
+            f"MB out of maximum allowed: {self.max_mem_allowed}")
+        if self.grid_to_mem(fine_grid_pts) < self.max_mem_allowed:
             return fine_grid_pts # no correction needed
 
         _log.warning(f"Maximum memory usage exceeded. Old grid dimensions: {fine_grid_pts}")
@@ -113,21 +89,26 @@ class BaseGridController(util.BaseController):
 
     def update_grid_xyz(self, coarse_dim, fine_dim, center, fine_grid_pts):
         _log.info("\tcoarse grid: (%5.3f,%5.3f,%5.3f)" % tuple(coarse_dim))
+        self.coarse_dim = coarse_dim
         _log.info("\tfine grid: (%5.3f,%5.3f,%5.3f)" % tuple(fine_dim))
+        self.fine_dim = fine_dim
         _log.info("\tcenter: (%5.3f,%5.3f,%5.3f)" % tuple(center))
+        self.center = center
         _log.info("\tfine grid points (%d,%d,%d)" % tuple(fine_grid_pts))
+        self.fine_grid_points = fine_grid_pts
 
-class GridPSizeController(BaseGridController):
-    """Logic used when grid parameters are set via APBS's psize.py.
+@util.attrs_define
+class GridPSizeModel(GridBaseModel):
+    """Config state for generating APBS grid parameters using psize.py (provided
+    as part of APBS.)
     """
-    _model_class = GridPSizeModel # autogenerate on_*_changed Slots
 
     def import_psize(self):
         import imp
         f, fname, description = imp.find_module('psize', [os.path.split(self.psize.getvalue())[0]])
         psize = imp.load_module('psize', f, fname, description)
 
-    def set_grid_params(self):
+    def set_grid_params(self, pqr_filename):
         if not self.psize.valid():
             raise util.NoPsizeException
 
@@ -135,24 +116,23 @@ class GridPSizeController(BaseGridController):
         if self.pymol_cmd.count_atoms(sel + " and not alt ''") != 0:
             _log.warning("You have alternate locations for some of your atoms!")
 
-        pqr_filename = self.getPqrFilename()
-        size = psize.Psize()
-        size.setConstant('gmemceil', self.model.max_mem_allowed)
-        size.runPsize(pqr_filename)
-        coarse_dim = size.getCoarseGridDims()  # cglen
-        fine_dim = size.getFineGridDims()  # fglen
+        psize_ = psize.Psize()
+        psize_.setConstant('gmemceil', self.max_mem_allowed)
+        psize_.runPsize(pqr_filename)
+        coarse_dim = psize_.getCoarseGridDims()  # cglen
+        fine_dim = psize_.getFineGridDims()  # fglen
         # could use procgrid for multiprocessors
-        fine_grid_pts = size.getFineGridPoints()  # dime
-        center = size.getCenter()  # cgcent and fgcent
+        fine_grid_pts = psize_.getFineGridPoints()  # dime
+        center = psize_.getCenter()  # cgcent and fgcent
         _log.info("APBS's psize.py was used to calculated grid dimensions")
 
-        fine_grid_pts = self.correct_fine_grid()
+        fine_grid_pts = self.correct_fine_grid(fine_grid_pts)
         self.update_grid_xyz(coarse_dim, fine_dim, center, fine_grid_pts)
 
-
-class GridPluginController(BaseGridController):
-    _model_class = GridPluginModel # autogenerate on_*_changed Slots
-
+@util.attrs_define
+class GridPluginModel(GridBaseModel):
+    """Config state for generating APBS grid parameters using the plugin's logic.
+    """
     def set_grid_params(self):
         # First, we need to get the dimensions of the molecule
         sel = self.pymol_cmd.pymol_selection
@@ -213,7 +193,32 @@ class GridPluginController(BaseGridController):
         _log.info("mult_fac: ", mult_fac)
         _log.info("fine_grid_pts: ", fine_grid_pts)
 
-        fine_grid_pts = self.correct_fine_grid()
+        fine_grid_pts = self.correct_fine_grid(fine_grid_pts)
         self.update_grid_xyz(coarse_dim, fine_dim, center, fine_grid_pts)
 
 # ------------------------------------------------------------------------------
+# Controllers
+
+
+class BaseGridController(util.BaseController):
+    """Logic used in all GridControllers.
+    """
+    def __init__(self, model, view, pymol_controller):
+        super(BaseGridController, self).__init__(model, view)
+        self.pymol_cmd = pymol_controller
+
+
+
+class GridPSizeController(BaseGridController):
+    """Logic used when grid parameters are set via APBS's psize.py.
+    """
+
+
+
+
+class GridPluginController(BaseGridController):
+
+
+
+# ------------------------------------------------------------------------------
+# Views

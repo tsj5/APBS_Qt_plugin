@@ -10,6 +10,7 @@ _log = logging.getLogger(__name__)
 
 import attrs
 import pymol.cmd as pymol_cmd
+from pymol.Qt.QtWidgets import QComboBox
 import util
 
 # ------------------------------------------------------------------------------
@@ -21,7 +22,17 @@ class PyMolModel(util.BaseModel):
     plugin-specific (i.e. beyond the pymol API.)
     """
     sel_values: list = attrs.Factory(list)
-    sel_idx: int
+    sel_idx: int = 0
+    pymol_instance = pymol_cmd
+
+    def __getattr__(self, name):
+        """Pass through all method lookups to pymol.cmd.
+        """
+        try:
+            # Throws exception if not in prototype chain
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            return getattr(self.pymol_instance, name)
 
     @property
     def selection(self):
@@ -33,63 +44,54 @@ class PyMolModel(util.BaseModel):
             raise util.PluginDialogException("Selection index out of range "
             f"{self.sel_idx}/{len(self.sel_values)}")
 
+    @property
+    def pymol_selection(self):
+        """Return pymol.cmd string corresponding to the current selection.
+        """
+        # always include explicitly specified hydrogens -- make this an option?
+        return f"(({self.selection}) or (neighbor ({self.selection}) and hydro))"
+
+    def get_default_sel_values(self):
+        # TODO: is this a reasonable default? List all object:molecules?
+        new_values = ['polymer']
+        new_values.extend(
+            [f"polymer & {s}" for s in self.pymol_instance.get_object_list('polymer')]
+        )
+        return new_values
+
 # ------------------------------------------------------------------------------
 # Controllers
 
 class PyMolController(util.PYQT_OBJECT):
     """Encapsulate state of PyMol application, for completeness.
     """
-    def __init__(self, model):
+    def __init__(self, model, view):
         super(PyMolController, self).__init__()
-        self._pymol = pymol_cmd
         self.model = model
+        # view for selection comboBox only; rest updated implicitly through
+        # changes to state to pymol_instance "model"
+        self.view = view
 
-    def __getattr__(self, name):
-        """Pass through all attribute access to pymol.cmd.
-        """
-        try:
-            # Throws exception if not in prototype chain
-            return object.__getattribute__(self, name)
-        except AttributeError:
-            return getattr(self._pymol, name)
+        # init combobox
+        self.view.clear()
+        for s in self.model.sel_values:
+            self.view.addItem(s)
 
-    def __setattr__(self, name, value):
-        """Pass through all attribute access to pymol.cmd.
-        """
-        try:
-            # Throws exception if not in prototype chain
-            _ = object.__getattribute__(self, name)
-        except AttributeError:
-            try:
-                setattr(self._pymol, name, value)
-            except Exception:
-                raise AttributeError(name)
-        else:
-            object.__setattr__(self, name, value)
+        # view -> model
+        self.view.currentIndexChanged.connect()
+        self.view.editTextChanged.connect(self.insert_custom_sel_value)
 
-    @property
-    def pymol_selection(self):
-        """Return pymol.cmd string corresponding to the current selection.
-        """
-        # always include explicitly specified hydrogens -- make this an option?
-        sel = self.model.selection
-        return f"(({sel}) or (neighbor ({sel}) and hydro))"
+        # model -> view
+        self.model.sel_idx_changed.connect(self.view.setCurrentIndex)
 
-    def _get_default_sel_values(self):
-        # TODO: is this a reasonable default? List all object:molecules?
-        new_values = ['polymer']
-        new_values.extend(
-            [f"polymer & {s}" for s in self._pymol.get_object_list('polymer')]
-        )
-        return new_values
 
     @util.PYQT_SLOT(int)
     def change_selection(self, new_sel_idx):
         try:
-            _ = self.sel_values.__getitem__(new_sel_idx)
+            _ = self.model.sel_values.__getitem__(new_sel_idx)
         except IndexError:
             raise util.PluginDialogException("Selection index out of range "
-            f"{self.sel_idx}/{len(self.sel_values)}")
+            f"{self.model.sel_idx}/{len(self.model.sel_values)}")
         self.model.sel_idx = new_sel_idx
 
     @util.PYQT_SLOT
