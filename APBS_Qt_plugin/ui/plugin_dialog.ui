@@ -148,7 +148,7 @@
             </widget>
            </item>
            <item row="2" column="0" colspan="2">
-            <widget class="ApbsGroupBoxView" name="apbs_groupBox">
+            <widget class="APBSGroupBoxView" name="apbs_groupBox">
              <property name="title">
               <string>Poisson-Boltzmann solver</string>
              </property>
@@ -212,7 +212,7 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>ApbsGroupBoxView</class>
+   <class>APBSGroupBoxView</class>
    <extends>QGroupBox</extends>
    <header>apbsgroupbox.h</header>
    <container>1</container>

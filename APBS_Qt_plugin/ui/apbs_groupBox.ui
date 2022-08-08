@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>404</width>
+    <width>480</width>
     <height>640</height>
    </rect>
   </property>
@@ -37,9 +37,6 @@
         <enum>Qt::PlainText</enum>
        </property>
       </widget>
-     </item>
-     <item row="2" column="1" alignment="Qt::AlignVCenter">
-      <widget class="QDoubleSpinBox" name="apbs_finegrid_spinBox"/>
      </item>
      <item row="1" column="1" colspan="2" alignment="Qt::AlignVCenter">
       <widget class="QLineEdit" name="apbs_focus_lineEdit"/>
@@ -117,6 +114,16 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item row="2" column="1">
+      <widget class="QSpinBox" name="apbs_finegrid_spinBox">
+       <property name="singleStep">
+        <number>1</number>
+       </property>
+       <property name="stepType">
+        <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

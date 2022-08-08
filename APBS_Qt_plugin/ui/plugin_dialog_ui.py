@@ -70,7 +70,7 @@ class Ui_plugin_dialog(object):
         self.viz_groupBox = VizGroupBoxView(self.tab_main)
         self.viz_groupBox.setObjectName("viz_groupBox")
         self.gridLayout_3.addWidget(self.viz_groupBox, 3, 0, 1, 2)
-        self.apbs_groupBox = ApbsGroupBoxView(self.tab_main)
+        self.apbs_groupBox = APBSGroupBoxView(self.tab_main)
         self.apbs_groupBox.setObjectName("apbs_groupBox")
         self.gridLayout_3.addWidget(self.apbs_groupBox, 2, 0, 1, 2)
         self.gridLayout_4.addLayout(self.gridLayout_3, 0, 0, 1, 1)
@@ -118,7 +118,7 @@ class Ui_plugin_dialog(object):
         self.label.setText(_translate("plugin_dialog", "This is the template for the input file to APBS. Variable names in curly braces are replaced by their corresponding values."))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_template), _translate("plugin_dialog", "APBS Template"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_paths), _translate("plugin_dialog", "Paths"))
-from apbsgroupbox import ApbsGroupBoxView
+from apbsgroupbox import APBSGroupBoxView
 from mainwidget import MainWidget
 from pqrgroupbox import PQRGroupBoxView
 from vizgroupbox import VizGroupBoxView

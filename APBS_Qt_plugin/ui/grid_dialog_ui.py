@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_grid_dialog(object):
     def setupUi(self, grid_dialog):
         grid_dialog.setObjectName("grid_dialog")
-        grid_dialog.resize(388, 474)
+        grid_dialog.resize(446, 432)
         self.gridLayout_2 = QtWidgets.QGridLayout(grid_dialog)
         self.gridLayout_2.setObjectName("gridLayout_2")
         self.gridLayout = QtWidgets.QGridLayout()

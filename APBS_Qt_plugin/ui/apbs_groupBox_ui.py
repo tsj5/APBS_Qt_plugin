@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_apbs_GroupBox(object):
     def setupUi(self, apbs_GroupBox):
         apbs_GroupBox.setObjectName("apbs_GroupBox")
-        apbs_GroupBox.resize(404, 640)
+        apbs_GroupBox.resize(480, 640)
         self.gridLayout = QtWidgets.QGridLayout(apbs_GroupBox)
         self.gridLayout.setObjectName("gridLayout")
         self.gridLayout_3 = QtWidgets.QGridLayout()
@@ -29,9 +29,6 @@ class Ui_apbs_GroupBox(object):
         self.label_6.setTextFormat(QtCore.Qt.PlainText)
         self.label_6.setObjectName("label_6")
         self.gridLayout_3.addWidget(self.label_6, 1, 0, 1, 1, QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-        self.apbs_finegrid_spinBox = QtWidgets.QDoubleSpinBox(apbs_GroupBox)
-        self.apbs_finegrid_spinBox.setObjectName("apbs_finegrid_spinBox")
-        self.gridLayout_3.addWidget(self.apbs_finegrid_spinBox, 2, 1, 1, 1, QtCore.Qt.AlignVCenter)
         self.apbs_focus_lineEdit = QtWidgets.QLineEdit(apbs_GroupBox)
         self.apbs_focus_lineEdit.setObjectName("apbs_focus_lineEdit")
         self.gridLayout_3.addWidget(self.apbs_focus_lineEdit, 1, 1, 1, 2, QtCore.Qt.AlignVCenter)
@@ -61,6 +58,11 @@ class Ui_apbs_GroupBox(object):
         self.gridLayout_3.addWidget(self.apbs_grid_options_button, 2, 2, 1, 1, QtCore.Qt.AlignVCenter)
         spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.gridLayout_3.addItem(spacerItem1, 4, 0, 1, 1)
+        self.apbs_finegrid_spinBox = QtWidgets.QSpinBox(apbs_GroupBox)
+        self.apbs_finegrid_spinBox.setSingleStep(1)
+        self.apbs_finegrid_spinBox.setStepType(QtWidgets.QAbstractSpinBox.AdaptiveDecimalStepType)
+        self.apbs_finegrid_spinBox.setObjectName("apbs_finegrid_spinBox")
+        self.gridLayout_3.addWidget(self.apbs_finegrid_spinBox, 2, 1, 1, 1)
         self.gridLayout.addLayout(self.gridLayout_3, 0, 0, 1, 1)
 
         self.retranslateUi(apbs_GroupBox)
