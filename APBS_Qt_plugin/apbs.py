@@ -12,6 +12,7 @@ import textwrap
 _log = logging.getLogger(__name__)
 
 from pymol.Qt.QtWidgets import QDialog
+from ui.views import APBSGroupBoxView
 from ui.apbs_dialog_ui import Ui_apbs_dialog
 import util
 
@@ -147,10 +148,10 @@ class APBSDialogView(QDialog, Ui_apbs_dialog):
 # Controller
 
 class APBSDialogController(util.BaseController):
-    def __init__(self, model, view):
+    def __init__(self, model):
         super(APBSDialogController, self).__init__()
         self.model = model
-        self.view = view
+        self.view = APBSDialogView()
 
         util.biconnect(self.view.mode_comboBox, self.model, "apbs_mode")
         util.biconnect(self.view.protein_eps_lineEdit, self.model, "interior_dielectric")
@@ -162,16 +163,24 @@ class APBSDialogController(util.BaseController):
         util.biconnect(self.view.charge_disc_comboBox, self.model, "chgm")
         util.biconnect(self.view.surf_calc_comboBox, self.model, "srfm")
 
+        # init view from model values
+        self.model.refresh()
+
 
 
 class APBSGroupBoxController(util.BaseController):
-    def __init__(self, model, view):
+    def __init__(self, view=None):
         super(APBSGroupBoxController, self).__init__()
-        self.model = model
-        self.view = view
+        self.model = APBSModel()
+        self.dialog_controller = APBSDialogController(self.model)
+        if view is None:
+            self.view = APBSGroupBoxView()
+        else:
+            self.view = view
 
         util.biconnect(self.view.apbs_calculate_checkBox, self.model, XXX)
         util.biconnect(self.view.apbs_focus_lineEdit, self.model, XXX)
         util.biconnect(self.view.apbs_outputmap_lineEdit, self.model, XXX)
 
-
+        # init view from model values
+        self.model.refresh()

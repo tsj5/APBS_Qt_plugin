@@ -8,6 +8,7 @@ _log = logging.getLogger(__name__)
 import pymol
 from pymol.Qt.QtWidgets import QDialog
 from ui.other_viz_dialog_ui import Ui_other_viz_dialog
+from ui.views import VizGroupBoxView
 import util
 
 # ------------------------------------------------------------------------------
@@ -139,10 +140,10 @@ class VizDialogView(QDialog, Ui_other_viz_dialog):
 # Controller
 
 class VizDialogController(util.BaseController):
-    def __init__(self, model, view):
+    def __init__(self, model):
         super(VizDialogController, self).__init__()
         self.model = model
-        self.view = view
+        self.view = VizDialogView()
 
         util.biconnect(self.view.mode_comboBox, self.model, "apbs_mode")
         util.biconnect(self.view.protein_eps_lineEdit, self.model, "interior_dielectric")
@@ -154,12 +155,26 @@ class VizDialogController(util.BaseController):
         util.biconnect(self.view.charge_disc_comboBox, self.model, "chgm")
         util.biconnect(self.view.surf_calc_comboBox, self.model, "srfm")
 
+        # init view from model values
+        self.model.refresh()
+
 class VizGroupBoxController(util.BaseController):
-    def __init__(self, model, view):
+    def __init__(self, pymol_controller=None, view=None):
         super(VizGroupBoxController, self).__init__()
-        self.model = model
-        self.view = view
+        if pymol_controller is None:
+            raise ValueError
+        self.model = VisualizationModel(
+            pymol_cmd = pymol_controller.model.pymol_instance
+        )
+        self.dialog_controller = VizDialogController(self.model)
+        if view is None:
+            self.view = VizGroupBoxView()
+        else:
+            self.view = view
 
         util.biconnect(self.view.apbs_calculate_checkBox, self.model, XXX)
         util.biconnect(self.view.apbs_focus_lineEdit, self.model, XXX)
         util.biconnect(self.view.apbs_outputmap_lineEdit, self.model, XXX)
+
+        # init view from model values
+        self.model.refresh()

@@ -10,6 +10,7 @@ import logging
 _log = logging.getLogger(__name__)
 
 import pymol
+from ui.views import VizGroupBoxView
 import util
 
 # ------------------------------------------------------------------------------
@@ -20,7 +21,7 @@ class PQRBaseModel(util.BaseModel):
     """Fields defining config state shared by all PQRModels.
     """
     pymol_cmd: pymol.PyMolModel
-    prepare_pqr: bool
+    prepare_pqr: bool = True
     pqr_out_file: pathlib.Path
     pqr_out_name: str = "prepared"
 
@@ -204,10 +205,21 @@ class PQRPyMolModel(PQRBaseModel):
 class PQRController(util.BaseController):
     """Base class with common methods for all implementations of PQR file generation.
     """
-    def __init__(self, pdb2pqr_model, pymol_model, view):
+    def __init__(self, pymol_controller=None, view=None):
         super(PQRController, self).__init__()
+        if pymol_controller is None:
+            raise ValueError
+        pdb2pqr_model = PPQRDB2PQRModel(
+            pymol_cmd = pymol_controller.model.pymol_instance
+        )
+        pymol_model = PQRPyMolModel(
+            pymol_cmd = pymol_controller.model.pymol_instance
+        )
         self.model = util.MultiModel(models = [pdb2pqr_model, pymol_model])
-        self.view = view
+        if view is None:
+            self.view = VizGroupBoxView()
+        else:
+            self.view = view
 
         # populate Method comboBox
         self.view.pqr_method_comboBox.clear()
@@ -226,6 +238,9 @@ class PQRController(util.BaseController):
 
         # view <-> pymol_model
         util.biconnect(self.view.pqr_output_mol_lineEdit, pymol_model, "pqr_out_name")
+
+        # init view from model values
+        self.model.refresh()
 
     @util.PYQT_SLOT(bool)
     def on_prepare_mol_changed(self, b):

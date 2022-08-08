@@ -228,10 +228,18 @@ class GridDialogView(QDialog, Ui_grid_dialog):
 # Controllers
 
 class GridController(util.BaseController):
-    def __init__(self, plugin_model, psize_model, view):
+    def __init__(self, pymol_controller=None):
         super(GridController, self).__init__()
+        if pymol_controller is None:
+            raise ValueError
+        plugin_model = GridPluginModel(
+            pymol_cmd = pymol_controller.model.pymol_instance
+        )
+        psize_model = GridPSizeModel(
+            pymol_cmd = pymol_controller.model.pymol_instance
+        )
         self.model = util.MultiModel(models = [plugin_model, psize_model])
-        self.view = view
+        self.view = GridDialogView()
 
         # populate Method comboBox
         self.view.auto_method_comboBox.clear()
@@ -250,4 +258,7 @@ class GridController(util.BaseController):
 
         # view <-> pymol_model
         util.biconnect(self.view.pqr_output_mol_lineEdit, pymol_model, "pqr_out_name")
+
+        # init view from model values
+        self.model.refresh()
 

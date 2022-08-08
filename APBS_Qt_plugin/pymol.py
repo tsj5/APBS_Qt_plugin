@@ -65,9 +65,9 @@ class PyMolModel(util.BaseModel):
 class PyMolController(util.PYQT_OBJECT):
     """Encapsulate state of PyMol application, for completeness.
     """
-    def __init__(self, model, view):
+    def __init__(self, view):
         super(PyMolController, self).__init__()
-        self.model = model
+        self.model = PyMolModel()
         # view for selection comboBox only; rest updated implicitly through
         # changes to state to pymol_instance "model"
         self.view = view
@@ -83,6 +83,9 @@ class PyMolController(util.PYQT_OBJECT):
 
         # model -> view
         self.model.sel_idx_changed.connect(self.view.setCurrentIndex)
+
+        # init view from model values
+        self.model.refresh()
 
 
     @util.PYQT_SLOT(int)
