@@ -11,7 +11,9 @@ import pathlib
 _log = logging.getLogger(__name__)
 
 import pymol.Qt.QtCore as QtCore
-from pymol.Qt.QtWidgets import QWidget, QDialog, QGroupBox
+from pymol.Qt.QtWidgets import (
+    QWidget, QCheckBox, QComboBox, QLineEdit
+)
 
 # ------------------------------------------------------------------------------
 # Qt convenience classes
@@ -37,12 +39,13 @@ def _attr_field_transformer(cls, fields):
     """
     new_fields = []
     for f in fields:
-        assert not attrs.has(f.type)
-        # don't create a descriptor/signal for attributes that are other
-        # Models (ie building up Model object through composition.)
-        # currently can't handle this case.
-        private_name = PropertyWrapper._private_from_public_name(f.name)
-        new_fields.append(f.evolve(name=private_name))
+        if attrs.has(f.type) or issubclass(f.type, PYQT_QOBJECT):
+            # don't create a descriptor/signal for attributes that are other
+            # Models (ie building up Model object through composition.)
+            # currently can't handle this case.
+            continue
+        p = PropertyNames.from_name(f.name)
+        new_fields.append(f.evolve(name=p.private_name))
     return new_fields
 
 def attrs_define(cls=None, **deco_kwargs):
@@ -136,7 +139,32 @@ class PropertyNames(collections.namedtuple(
     @classmethod
     def from_private_name(cls, private_name):
         assert private_name.startswith('_')
-        return cls.from_name(cls, private_name)
+        return cls.from_name(private_name)
+
+def connect_signal(obj_w_signal, prop_name, slot):
+    p = PropertyNames.from_name(prop_name)
+    getattr(obj_w_signal, p.signal_name).connect(slot)
+
+def connect_slot(signal, obj_w_slot, prop_name):
+    p = PropertyNames.from_name(prop_name)
+    signal.connect(getattr(obj_w_slot, p.slot_name))
+
+_AUTOCONNECT_SIGNAL_NAMES = {
+    QCheckBox: ("stateChanged", "setChecked"),
+    QComboBox: ("activated", "setCurrentIndex"),
+    QLineEdit: ("textEdited", "setText")
+} # others?
+
+def biconnect(view, model, model_prop_name):
+    connected = False
+    for k,v in _AUTOCONNECT_SIGNAL_NAMES.items():
+        if issubclass(view, k):
+            v_signal_name, v_slot_name = v
+            connect_signal(model, model_prop_name, getattr(view, v_slot_name))
+            connect_slot(getattr(view, v_signal_name), model, model_prop_name)
+            connected = True
+    if not connected:
+        raise AttributeError
 
 class PropertyWrapper(PYQT_PROPERTY):
     """Wrapper for pyqtProperty which automatically emits signal on field value
@@ -193,6 +221,9 @@ class AutoSignalSlotMetaclass(type(PYQT_QOBJECT)):
         # If we get here, attrs decorator has done its work -- need attrs slots=True!
         for f in attrs_['__attrs_attrs__']:
             signal_type = _AUTOSIGNAL_TYPE_COERCE.get(f.type, f.type)
+            if attrs.has(f.type) or issubclass(f.type, PYQT_QOBJECT):
+                # don't define new signals/slots for nested Model objects
+                continue
             p = PropertyNames.from_private_name(f.name) # _attr_field_transformer remapped names
             if p.signal_name not in attrs_:
                 # auto-generate signal
@@ -231,6 +262,11 @@ class BaseModel(PYQT_QOBJECT, metaclass = AutoSignalSlotMetaclass):
     """
     pass
 
+class BaseController(PYQT_QOBJECT):
+    """Base class for our Controller classes.
+    """
+    pass
+
 @attrs_define
 class MultiModel(PYQT_QOBJECT):
     """Wrapper for a collection of Models: maintains state of all models, but
@@ -262,8 +298,7 @@ class MultiModel(PYQT_QOBJECT):
         else:
             object.__setattr__(self, name, value)
 
-
-# ----------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 class PluginException(Exception):
     """Base class for all exceptions raised by plugin's code.

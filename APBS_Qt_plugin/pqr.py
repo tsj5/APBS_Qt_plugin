@@ -2,7 +2,6 @@
 Model, view and controller for PQR file generation configuration.
 """
 import os
-import enum
 import pathlib
 import re
 import shlex
@@ -211,6 +210,23 @@ class PQRGroupBoxView(QGroupBox, Ui_pqr_GroupBox):
         super(PQRGroupBoxView, self).__init__(parent)
         self.setupUi(self)
 
+        # checkbox enables/disables dependent widgets
+        self.pqr_prepare_mol_checkBox.connect(self.on_prepare_mol_changed)
+
+        # combobox changes pane of stackedwidget
+        self.pqr_method_comboBox.activated.connect(
+            self.pqr_method_stackedWidget.setCurrentIndex
+        )
+
+    @util.PYQT_SLOT(bool)
+    def on_prepare_mol_changed(self, b):
+        # enable/diable dependent controls
+        for w in (
+            self.pqr_method_stackedWidget,
+            self.pqr_method_comboBox
+        ):
+            w.setEnabled(b)
+            w.setDisabled(not b) # difference?
 
 # ------------------------------------------------------------------------------
 # Controllers
@@ -229,28 +245,28 @@ class PQRController(util.BaseController):
         self.view.pqr_method_comboBox.addItem("Using PyMol")
         self.view.pqr_method_comboBox.setIndex(0)
 
-        # view -> multimodel
-        self.view.pqr_method_comboBox.currentIndexChanged.connect()
+        # view <-> multimodel
+        util.biconnect(self.view.pqr_method_comboBox, self.model, "multimodel_index")
+        self.view.pqr_prepare_mol_checkBox.stateChanged.connect(self.on_prepare_mol_changed)
 
-        # multimodel -> view
-        self.model.multimodel_index_changed.connect(self.view.pqr_method_comboBoxsetCurrentIndex)
+        # view <-> pdb2pqr_model
+        util.biconnect(self.view.pqr_output_mol_lineEdit, pdb2pqr_model, "pqr_out_name")
+        util.biconnect(self.view.pdb2pqr_flags_lineEdit, pdb2pqr_model, "pdb2pqr_flags")
+        util.biconnect(self.view.pdb2pqr_warnings_checkBox, pdb2pqr_model, "ignore_warn")
 
-        # view -> pdb2pqr_model
-        self.view.pqr_output_mol_lineEdit.textEdited.connect(pdb2pqr_model.pqr_out_name)
-
-        # pdb2pqr_model -> view
-        pdb2pqr_model.pqr_out_name_changed.connect(self.view.pqr_output_mol_lineEdit.setText)
-
-        # view -> pymol_model
-        self.view.pqr_output_mol_lineEdit.textEdited.connect(pymol_model.pqr_out_name)
-
-        # pymol_model -> view
-        pymol_model.pqr_out_name_changed.connect(self.view.pqr_output_mol_lineEdit.setText)
+        # view <-> pymol_model
+        util.biconnect(self.view.pqr_output_mol_lineEdit, pymol_model, "pqr_out_name")
 
     @util.PYQT_SLOT(bool)
     def on_prepare_mol_changed(self, b):
         if b:
-
+            # "do prepare" = either use pdb2pqr, or use pymol pqr and add Hs
+            idx = self.view.pqr_method_comboBox.currentIndex()
+            self.model.multimodel_index = idx
+            self.model.models[1].add_hs = True # need better syntax for this stuff
         else:
+            # "don't prepare" = use PyMol PQR, don't try to add Hs
+            self.model.multimodel_index = 1 # need better syntax for this stuff
+            self.model.add_hs = False
 
 

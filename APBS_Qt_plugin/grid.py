@@ -1,12 +1,15 @@
 """
 Model, view and controller for grid generation configuration.
 """
-import os
+import os.path
 import math
 
 import logging
 _log = logging.getLogger(__name__)
 
+from pymol.Qt.QtWidgets import QDialog
+
+from ui.pqr_groupBox_ui import Ui_grid_dialog
 import pymol
 import util
 
@@ -20,12 +23,10 @@ class GridBaseModel(util.BaseModel):
     """Config state shared by all GridModels.
     """
     pymol_cmd: pymol.PyMolModel
-
     coarse_dim: list
     fine_dim: list
     fine_grid_points: list
     center: list
-
     max_mem_allowed: int = 2500
 
     @staticmethod
@@ -196,29 +197,59 @@ class GridPluginModel(GridBaseModel):
         fine_grid_pts = self.correct_fine_grid(fine_grid_pts)
         self.update_grid_xyz(coarse_dim, fine_dim, center, fine_grid_pts)
 
-# ------------------------------------------------------------------------------
-# Controllers
-
-
-class BaseGridController(util.BaseController):
-    """Logic used in all GridControllers.
-    """
-    def __init__(self, model, view, pymol_controller):
-        super(BaseGridController, self).__init__(model, view)
-        self.pymol_cmd = pymol_controller
-
-
-
-class GridPSizeController(BaseGridController):
-    """Logic used when grid parameters are set via APBS's psize.py.
-    """
-
-
-
-
-class GridPluginController(BaseGridController):
-
-
 
 # ------------------------------------------------------------------------------
 # Views
+
+class GridDialogView(QDialog, Ui_grid_dialog):
+    def __init__(self, parent=None):
+        super(GridDialogView, self).__init__(parent)
+        self.setupUi(self)
+
+        # checkbox enables/disables dependent widgets
+        self.use_custom_checkBox.connect(self.on_use_custom_changed)
+
+        # connect OK/cancel
+        self.dialog_buttons.accepted.connect(self.accept)
+        self.dialog_buttons.rejected.connect(self.reject)
+
+    @util.PYQT_SLOT(bool)
+    def on_use_custom_changed(self, b):
+        # enable/diable dependent controls
+        for w in (
+            self.auto_method_comboBox,
+            self.calculate_button,
+            self.grid_tableWidget,
+            self.memory_lineEdit
+        ):
+            w.setEnabled(b)
+            w.setDisabled(not b) # difference?
+
+
+# ------------------------------------------------------------------------------
+# Controllers
+
+class GridController(util.BaseController):
+    def __init__(self, plugin_model, psize_model, view):
+        super(GridController, self).__init__()
+        self.model = util.MultiModel(models = [plugin_model, psize_model])
+        self.view = view
+
+        # populate Method comboBox
+        self.view.auto_method_comboBox.clear()
+        self.view.auto_method_comboBox.addItem("Using plugin")
+        self.view.auto_method_comboBox.addItem("Using APBS PSize")
+        self.view.auto_method_comboBox.setIndex(0)
+
+        # view <-> multimodel
+        util.biconnect(self.view.auto_method_comboBox, self.model, "multimodel_index")
+        self.view.use_custom_checkBox.stateChanged.connect(self.on_prepare_mol_changed)
+
+        # view <-> pdb2pqr_model
+        util.biconnect(self.view.pqr_output_mol_lineEdit, pdb2pqr_model, "pqr_out_name")
+        util.biconnect(self.view.pdb2pqr_flags_lineEdit, pdb2pqr_model, "pdb2pqr_flags")
+        util.biconnect(self.view.pdb2pqr_warnings_checkBox, pdb2pqr_model, "ignore_warn")
+
+        # view <-> pymol_model
+        util.biconnect(self.view.pqr_output_mol_lineEdit, pymol_model, "pqr_out_name")
+

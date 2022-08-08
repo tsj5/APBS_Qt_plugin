@@ -6,6 +6,10 @@ import logging
 _log = logging.getLogger(__name__)
 
 import pymol
+from pymol.Qt.QtWidgets import QDialog, QGroupBox
+
+from ui.other_viz_dialog_ui import Ui_other_viz_dialog
+from ui.viz_groupBox_ui import Ui_viz_GroupBox
 import util
 
 # ------------------------------------------------------------------------------
@@ -122,10 +126,47 @@ class VisualizationModel(util.BaseModel):
         self.pymol_cmd.show('mesh', grad_name)
 
 # ------------------------------------------------------------------------------
+# View
 
-class VisualizationController(util.BaseController):
-    def __init__(self, model, view, pymol_controller):
-        super(VisualizationController, self).__init__(model, view)
-        self.pymol_cmd = pymol_controller
+class VizDialogView(QDialog, Ui_other_viz_dialog):
+    def __init__(self, parent=None):
+        super(VizDialogView, self).__init__(parent)
+        self.setupUi(self)
 
+        # connect OK/cancel
+        self.dialog_buttons.accepted.connect(self.accept)
+        self.dialog_buttons.rejected.connect(self.reject)
 
+class VizGroupBoxView(QGroupBox, Ui_viz_GroupBox):
+    def __init__(self, parent=None):
+        super(VizGroupBoxView, self).__init__(parent)
+        self.setupUi(self)
+
+# ------------------------------------------------------------------------------
+# Controller
+
+class VizDialogController(util.BaseController):
+    def __init__(self, model, view):
+        super(VizDialogController, self).__init__()
+        self.model = model
+        self.view = view
+
+        util.biconnect(self.view.mode_comboBox, self.model, "apbs_mode")
+        util.biconnect(self.view.protein_eps_lineEdit, self.model, "interior_dielectric")
+        util.biconnect(self.view.solvent_eps_lineEdit, self.model, "solvent_dielectric")
+        util.biconnect(self.view.solvent_r_lineEdit, self.model, "solvent_radius")
+        util.biconnect(self.view.vacc_lineEdit, self.model, "sdens")
+        util.biconnect(self.view.sys_temp_lineEdit, self.model, "system_temp")
+        util.biconnect(self.view.bc_comboBox, self.model, "bcfl")
+        util.biconnect(self.view.charge_disc_comboBox, self.model, "chgm")
+        util.biconnect(self.view.surf_calc_comboBox, self.model, "srfm")
+
+class VizGroupBoxController(util.BaseController):
+    def __init__(self, model, view):
+        super(VizGroupBoxController, self).__init__()
+        self.model = model
+        self.view = view
+
+        util.biconnect(self.view.apbs_calculate_checkBox, self.model, XXX)
+        util.biconnect(self.view.apbs_focus_lineEdit, self.model, XXX)
+        util.biconnect(self.view.apbs_outputmap_lineEdit, self.model, XXX)

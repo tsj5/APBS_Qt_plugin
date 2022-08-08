@@ -11,6 +11,10 @@ import textwrap
 
 _log = logging.getLogger(__name__)
 
+from pymol.Qt.QtWidgets import QDialog, QGroupBox
+
+from ui.apbs_dialog_ui import Ui_apbs_dialog
+from ui.apbs_groupBox_ui import Ui_apbs_GroupBox
 import util
 
 # ------------------------------------------------------------------------------
@@ -77,7 +81,8 @@ class APBSModel(util.BaseModel):
     # object. Ignored when srad is 0.0 (see srad) or srfm is spl2 (see srfm). There is a direct
     # correlation between the value used for the Vacc sphere density, the accuracy of the Vacc
     # object, and the APBS calculation time. APBS default value is 10.0.
-    sdens: float =10.0
+    sdens: float = 10.0
+    srfm: str = ""
 
     @staticmethod
     def template_apbs_values(self):
@@ -129,13 +134,53 @@ class APBSModel(util.BaseModel):
             raise util.PluginDialogException(f"Couldn't write file to  {self.apbs_config_file}.")
 
 
-# ------------------------------------------------------------------------------
-# Controller
-
-class APBSController(util.BaseController):
-    _model_class = APBSModel # autogenerate on_*_changed Slots
-
-
 
 # ------------------------------------------------------------------------------
 # View
+
+class APBSDialogView(QDialog, Ui_apbs_dialog):
+    def __init__(self, parent=None):
+        super(APBSDialogView, self).__init__(parent)
+        self.setupUi(self)
+
+        # connect OK/cancel
+        self.dialog_buttons.accepted.connect(self.accept)
+        self.dialog_buttons.rejected.connect(self.reject)
+
+class APBSGroupBoxView(QGroupBox, Ui_apbs_GroupBox):
+    def __init__(self, parent=None):
+        super(APBSGroupBoxView, self).__init__(parent)
+        self.setupUi(self)
+
+# ------------------------------------------------------------------------------
+# Controller
+
+class APBSDialogController(util.BaseController):
+    def __init__(self, model, view):
+        super(APBSDialogController, self).__init__()
+        self.model = model
+        self.view = view
+
+        util.biconnect(self.view.mode_comboBox, self.model, "apbs_mode")
+        util.biconnect(self.view.protein_eps_lineEdit, self.model, "interior_dielectric")
+        util.biconnect(self.view.solvent_eps_lineEdit, self.model, "solvent_dielectric")
+        util.biconnect(self.view.solvent_r_lineEdit, self.model, "solvent_radius")
+        util.biconnect(self.view.vacc_lineEdit, self.model, "sdens")
+        util.biconnect(self.view.sys_temp_lineEdit, self.model, "system_temp")
+        util.biconnect(self.view.bc_comboBox, self.model, "bcfl")
+        util.biconnect(self.view.charge_disc_comboBox, self.model, "chgm")
+        util.biconnect(self.view.surf_calc_comboBox, self.model, "srfm")
+
+
+
+class APBSGroupBoxController(util.BaseController):
+    def __init__(self, model, view):
+        super(APBSGroupBoxController, self).__init__()
+        self.model = model
+        self.view = view
+
+        util.biconnect(self.view.apbs_calculate_checkBox, self.model, XXX)
+        util.biconnect(self.view.apbs_focus_lineEdit, self.model, XXX)
+        util.biconnect(self.view.apbs_outputmap_lineEdit, self.model, XXX)
+
+
