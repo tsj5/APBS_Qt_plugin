@@ -158,6 +158,10 @@ class VizDialogController(util.BaseController):
         # init view from model values
         self.model.refresh()
 
+    @util.PYQT_SLOT
+    def exec_(self):
+        self.view.exec_()
+
 class VizGroupBoxController(util.BaseController):
     def __init__(self, pymol_controller=None, view=None):
         super(VizGroupBoxController, self).__init__()
@@ -171,6 +175,8 @@ class VizGroupBoxController(util.BaseController):
             self.view = VizGroupBoxView()
         else:
             self.view = view
+
+        util.connect_slot(self.view.other_viz_options_button.clicked, self.dialog_controller.exec_)
 
         util.biconnect(self.view.apbs_calculate_checkBox, self.model, XXX)
         util.biconnect(self.view.apbs_focus_lineEdit, self.model, XXX)

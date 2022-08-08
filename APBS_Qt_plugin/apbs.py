@@ -11,10 +11,11 @@ import textwrap
 
 _log = logging.getLogger(__name__)
 
+import pymol
 from pymol.Qt.QtWidgets import QDialog
 from ui.views import APBSGroupBoxView
 from ui.apbs_dialog_ui import Ui_apbs_dialog
-import util
+import grid, util
 
 # ------------------------------------------------------------------------------
 # Models
@@ -56,6 +57,8 @@ SrfmEnum = util.LabeledEnum("SrfmEnum",
 class APBSModel(util.BaseModel):
     """Config state for options to be passed to APBS.
     """
+    pymol_cmd: pymol.PyMolModel
+
     apbs_path: pathlib.Path
     apbs_config_file: pathlib.Path
     apbs_dx_file: pathlib.Path
@@ -132,6 +135,13 @@ class APBSModel(util.BaseModel):
         except Exception:
             raise util.PluginDialogException(f"Couldn't write file to  {self.apbs_config_file}.")
 
+    def run_apbs(self):
+        # TODO
+        pass
+
+    def load_apbs_map(self):
+        # TODO
+        pass
 # ------------------------------------------------------------------------------
 # Views
 
@@ -166,17 +176,33 @@ class APBSDialogController(util.BaseController):
         # init view from model values
         self.model.refresh()
 
-
+    @util.PYQT_SLOT
+    def exec_(self):
+        self.view.exec_()
 
 class APBSGroupBoxController(util.BaseController):
-    def __init__(self, view=None):
+    def __init__(self,
+        pymol_controller=None, view=None
+    ):
         super(APBSGroupBoxController, self).__init__()
-        self.model = APBSModel()
+        if pymol_controller is None:
+            raise ValueError
+        self.model = APBSModel(
+            pymol_cmd = pymol_controller.model.pymol_instance
+        )
         self.dialog_controller = APBSDialogController(self.model)
+
+        self.pymol_controller = pymol_controller
+        self.grid_controller = grid.GridController(
+            pymol_controller = self.pymol_controller
+        )
         if view is None:
             self.view = APBSGroupBoxView()
         else:
             self.view = view
+
+        util.connect_slot(self.view.apbs_options_button.clicked, self.dialog_controller.exec_)
+        util.connect_slot(self.view.apbs_grid_options_button.clicked, self.grid_controller.exec_)
 
         util.biconnect(self.view.apbs_calculate_checkBox, self.model, XXX)
         util.biconnect(self.view.apbs_focus_lineEdit, self.model, XXX)

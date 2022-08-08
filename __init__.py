@@ -30,7 +30,8 @@ def run_plugin_gui():
 
     try:
         if PLUGIN_DIALOG is None:
-            PLUGIN_DIALOG = self.view()
+            import APBS_Qt_plugin.plugin as plugin
+            PLUGIN_DIALOG = plugin.PluginController()
         PLUGIN_DIALOG.show()
 
     # handle uncaught exceptions
