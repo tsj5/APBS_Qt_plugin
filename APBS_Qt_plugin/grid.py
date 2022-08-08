@@ -7,7 +7,7 @@ import math
 import logging
 _log = logging.getLogger(__name__)
 
-import pymol
+import pymol_api
 from pymol.Qt.QtWidgets import QDialog
 from ui.grid_dialog_ui import Ui_grid_dialog
 import util
@@ -21,7 +21,7 @@ _FLOAT_MB = 1024. * 1024.
 class GridBaseModel(util.BaseModel):
     """Config state shared by all GridModels.
     """
-    pymol_cmd: pymol.PyMolModel
+    pymol_cmd: pymol_api.PyMolModel
     coarse_dim: list
     fine_dim: list
     fine_grid_points: list

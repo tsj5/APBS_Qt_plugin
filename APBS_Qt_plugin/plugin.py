@@ -4,7 +4,7 @@ Top-level plugin state and logic.
 import logging
 _log = logging.getLogger(__name__)
 
-import pymol
+import pymol_api
 from pymol.Qt.QtWidgets import QDialog
 from ui.plugin_dialog_ui import Ui_plugin_dialog
 import pqr, grid, apbs, visualization, util
@@ -52,7 +52,7 @@ class PluginController(util.BaseController):
 
         # now init all dependent controllers:
 
-        self.pymol_controller = pymol.PyMolController(
+        self.pymol_controller = pymol_api.PyMolController(
             view = self.view.selection_comboBox
         )
 

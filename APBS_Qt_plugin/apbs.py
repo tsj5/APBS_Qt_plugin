@@ -11,7 +11,7 @@ import textwrap
 
 _log = logging.getLogger(__name__)
 
-import pymol
+import pymol_api
 from pymol.Qt.QtWidgets import QDialog
 from ui.views import APBSGroupBoxView
 from ui.apbs_dialog_ui import Ui_apbs_dialog
@@ -57,7 +57,7 @@ SrfmEnum = util.LabeledEnum("SrfmEnum",
 class APBSModel(util.BaseModel):
     """Config state for options to be passed to APBS.
     """
-    pymol_cmd: pymol.PyMolModel
+    pymol_cmd: pymol_api.PyMolModel
 
     apbs_path: pathlib.Path
     apbs_config_file: pathlib.Path

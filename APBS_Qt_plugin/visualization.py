@@ -5,7 +5,7 @@ calculated potential back in PyMol.
 import logging
 _log = logging.getLogger(__name__)
 
-import pymol
+import pymol_api
 from pymol.Qt.QtWidgets import QDialog
 from ui.other_viz_dialog_ui import Ui_other_viz_dialog
 from ui.views import VizGroupBoxView
@@ -15,7 +15,7 @@ import util
 
 @util.attrs_define
 class VisualizationModel(util.BaseModel):
-    pymol_cmd: pymol.PyMolModel
+    pymol_cmd: pymol_api.PyMolModel
 
     vis_group: int = 1
     molecule: str = ""

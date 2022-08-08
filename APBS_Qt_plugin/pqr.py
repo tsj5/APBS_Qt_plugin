@@ -9,7 +9,7 @@ import shlex
 import logging
 _log = logging.getLogger(__name__)
 
-import pymol
+import pymol_api
 from ui.views import VizGroupBoxView
 import util
 
@@ -20,7 +20,7 @@ import util
 class PQRBaseModel(util.BaseModel):
     """Fields defining config state shared by all PQRModels.
     """
-    pymol_cmd: pymol.PyMolModel
+    pymol_cmd: pymol_api.PyMolModel
     prepare_pqr: bool = True
     pqr_out_file: pathlib.Path
     pqr_out_name: str = "prepared"
