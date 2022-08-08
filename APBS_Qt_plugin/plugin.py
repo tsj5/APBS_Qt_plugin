@@ -6,13 +6,7 @@ _log = logging.getLogger(__name__)
 
 import pymol
 from pymol.Qt.QtWidgets import QDialog
-
 from ui.plugin_dialog_ui import Ui_plugin_dialog
-
-from pqr import PQRGroupBoxView
-from apbs import APBSGroupBoxView
-from visualization import VizGroupBoxView
-
 import util
 
 # ------------------------------------------------------------------------------

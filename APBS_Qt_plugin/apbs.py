@@ -11,10 +11,8 @@ import textwrap
 
 _log = logging.getLogger(__name__)
 
-from pymol.Qt.QtWidgets import QDialog, QGroupBox
-
+from pymol.Qt.QtWidgets import QDialog
 from ui.apbs_dialog_ui import Ui_apbs_dialog
-from ui.apbs_groupBox_ui import Ui_apbs_GroupBox
 import util
 
 # ------------------------------------------------------------------------------
@@ -133,10 +131,8 @@ class APBSModel(util.BaseModel):
         except Exception:
             raise util.PluginDialogException(f"Couldn't write file to  {self.apbs_config_file}.")
 
-
-
 # ------------------------------------------------------------------------------
-# View
+# Views
 
 class APBSDialogView(QDialog, Ui_apbs_dialog):
     def __init__(self, parent=None):
@@ -146,11 +142,6 @@ class APBSDialogView(QDialog, Ui_apbs_dialog):
         # connect OK/cancel
         self.dialog_buttons.accepted.connect(self.accept)
         self.dialog_buttons.rejected.connect(self.reject)
-
-class APBSGroupBoxView(QGroupBox, Ui_apbs_GroupBox):
-    def __init__(self, parent=None):
-        super(APBSGroupBoxView, self).__init__(parent)
-        self.setupUi(self)
 
 # ------------------------------------------------------------------------------
 # Controller

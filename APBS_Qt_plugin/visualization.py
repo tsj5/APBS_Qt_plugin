@@ -6,10 +6,8 @@ import logging
 _log = logging.getLogger(__name__)
 
 import pymol
-from pymol.Qt.QtWidgets import QDialog, QGroupBox
-
+from pymol.Qt.QtWidgets import QDialog
 from ui.other_viz_dialog_ui import Ui_other_viz_dialog
-from ui.viz_groupBox_ui import Ui_viz_GroupBox
 import util
 
 # ------------------------------------------------------------------------------
@@ -126,7 +124,7 @@ class VisualizationModel(util.BaseModel):
         self.pymol_cmd.show('mesh', grad_name)
 
 # ------------------------------------------------------------------------------
-# View
+# Views
 
 class VizDialogView(QDialog, Ui_other_viz_dialog):
     def __init__(self, parent=None):
@@ -136,11 +134,6 @@ class VizDialogView(QDialog, Ui_other_viz_dialog):
         # connect OK/cancel
         self.dialog_buttons.accepted.connect(self.accept)
         self.dialog_buttons.rejected.connect(self.reject)
-
-class VizGroupBoxView(QGroupBox, Ui_viz_GroupBox):
-    def __init__(self, parent=None):
-        super(VizGroupBoxView, self).__init__(parent)
-        self.setupUi(self)
 
 # ------------------------------------------------------------------------------
 # Controller

@@ -7,10 +7,9 @@ import math
 import logging
 _log = logging.getLogger(__name__)
 
-from pymol.Qt.QtWidgets import QDialog
-
-from ui.pqr_groupBox_ui import Ui_grid_dialog
 import pymol
+from pymol.Qt.QtWidgets import QDialog
+from ui.grid_dialog_ui import Ui_grid_dialog
 import util
 
 # ------------------------------------------------------------------------------
@@ -224,7 +223,6 @@ class GridDialogView(QDialog, Ui_grid_dialog):
         ):
             w.setEnabled(b)
             w.setDisabled(not b) # difference?
-
 
 # ------------------------------------------------------------------------------
 # Controllers

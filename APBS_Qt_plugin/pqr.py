@@ -10,9 +10,6 @@ import logging
 _log = logging.getLogger(__name__)
 
 import pymol
-from pymol.Qt.QtWidgets import QGroupBox
-
-from ui.pqr_groupBox_ui import Ui_pqr_GroupBox
 import util
 
 # ------------------------------------------------------------------------------
@@ -200,33 +197,6 @@ class PQRPyMolModel(PQRBaseModel):
                 "and re-start the calculation\nor fix their parameters in the generated PQR file "
                 "and run the calculation\nusing the modified PQR file (select 'Use another PQR' in 'Main')."
             )
-
-
-# ------------------------------------------------------------------------------
-# Views
-
-class PQRGroupBoxView(QGroupBox, Ui_pqr_GroupBox):
-    def __init__(self, parent=None):
-        super(PQRGroupBoxView, self).__init__(parent)
-        self.setupUi(self)
-
-        # checkbox enables/disables dependent widgets
-        self.pqr_prepare_mol_checkBox.connect(self.on_prepare_mol_changed)
-
-        # combobox changes pane of stackedwidget
-        self.pqr_method_comboBox.activated.connect(
-            self.pqr_method_stackedWidget.setCurrentIndex
-        )
-
-    @util.PYQT_SLOT(bool)
-    def on_prepare_mol_changed(self, b):
-        # enable/diable dependent controls
-        for w in (
-            self.pqr_method_stackedWidget,
-            self.pqr_method_comboBox
-        ):
-            w.setEnabled(b)
-            w.setDisabled(not b) # difference?
 
 # ------------------------------------------------------------------------------
 # Controllers
