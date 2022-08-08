@@ -44,7 +44,7 @@
      </item>
      <item row="2" column="0" colspan="3">
       <widget class="QStackedWidget" name="pqr_method_stackedWidget">
-       <widget class="Pdb2pqrWidget" name="page_pdb2pqr">
+       <widget class="QWidget" name="page_pdb2pqr">
         <layout class="QGridLayout" name="gridLayout_4">
          <item row="0" column="0">
           <layout class="QGridLayout" name="gridLayout_3">
@@ -96,7 +96,7 @@ It removes ligands and modified residues.</string>
          </item>
         </layout>
        </widget>
-       <widget class="PqrPyMolWidget" name="page_pymol">
+       <widget class="QWidget" name="page_pymol">
         <layout class="QGridLayout" name="gridLayout_6">
          <item row="0" column="0">
           <layout class="QGridLayout" name="gridLayout_5">
@@ -159,20 +159,6 @@ It removes ligands and modified residues.</string>
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>Pdb2pqrWidget</class>
-   <extends>QWidget</extends>
-   <header>pdb2pqrwidget.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>PqrPyMolWidget</class>
-   <extends>QWidget</extends>
-   <header>pqrpymolwidget.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>
