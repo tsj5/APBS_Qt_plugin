@@ -17,7 +17,7 @@ class PluginModel(util.BaseModel):
     apbs_model: util.BaseModel
     viz_model: util.BaseModel
 
-    @util.PYQT_SLOT
+    @util.PYQT_SLOT()
     def run(self):
         """Run the full calculation.
         """

@@ -61,7 +61,7 @@ class PyMolModel(util.BaseModel):
 # ------------------------------------------------------------------------------
 # Controllers
 
-class PyMolController(util.PYQT_OBJECT):
+class PyMolController(util.PYQT_QOBJECT):
     """Encapsulate state of PyMol application, for completeness.
     """
     def __init__(self, view):
@@ -96,7 +96,7 @@ class PyMolController(util.PYQT_OBJECT):
             f"{self.model.sel_idx}/{len(self.model.sel_values)}")
         self.model.sel_idx = new_sel_idx
 
-    @util.PYQT_SLOT
+    @util.PYQT_SLOT()
     def get_pymol_sel_values(self):
         """Populate selection values based on current pymol state.
         """

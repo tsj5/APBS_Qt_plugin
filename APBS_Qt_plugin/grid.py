@@ -223,7 +223,7 @@ class GridDialogView(QtWidgets.QDialog, Ui_grid_dialog):
             w.setEnabled(b)
             w.setDisabled(not b) # difference?
 
-    @util.PYQT_SLOT
+    @util.PYQT_SLOT()
     def exec_(self):
         self.view.exec_()
 

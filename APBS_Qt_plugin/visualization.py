@@ -157,7 +157,7 @@ class VizDialogController(util.BaseController):
         # init view from model values
         self.model.refresh()
 
-    @util.PYQT_SLOT
+    @util.PYQT_SLOT()
     def exec_(self):
         self.view.exec_()
 
