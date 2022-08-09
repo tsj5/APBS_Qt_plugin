@@ -1,6 +1,6 @@
 # APBS_Qt_plugin
 
-This is an **experimental** port of the [APBS Tools plugin](https://pymolwiki.org/index.php/Apbsplugin) for [PyMol](https://pymol.org/2/) version 2.x. It is **not** ready for production use; I'm writing it as an exercise to learn PyQt.
+This is an **experimental** port of the [APBS Tools plugin](https://pymolwiki.org/index.php/Apbsplugin) for [PyMol](https://pymol.org/2/) version 2.x. It's under development and **not** ready for production use; I'm writing it as an exercise to learn PyQt.
 
 Note that this is *only* relevant for the open-source fork of PyMOL; this functionality is [included by default](https://pymolwiki.org/index.php/APBS_Electrostatics_Plugin) in the incentive fork of PyMOL provided by [Schrodinger](https://www.schrodinger.com).
 
@@ -25,13 +25,15 @@ Then do
 conda env create -f=conda.yml; conda activate APBS_Qt_Plugin
 ```
 
+To add the plugin in PyMol, select the `APBS_Qt_plugin` directory in the [Plugins manager](https://pymolwiki.org/index.php/Plugin_Manager).
+
 ## Design considerations
 
 I've attempted to reorganize the code along the lines of the (hierarchical) Model-View-Controller pattern. This is *absolutely* overkill for an application whose scope is this small, but I wanted to use the project as a way to explore coding practices that scale to large applications.
 
 At least subjectively, this has felt like "going against the grain" of PyQt's intentions. Qt's use of Model/View terminology refers to something subtantively different, as clarified in [this SO post](https://stackoverflow.com/questions/5543198/why-qt-is-misusing-model-view-terminology). UI widgets operate according to an event-driven paradigm using [signals and slots](https://doc.qt.io/qtforpython/overviews/signalsandslots.html), but neither PyQt's `*Model` objects or the base data types wrapped from C++ Qt have predefined signals or slots: these need to be defined manually on the Model class (as in [this example](https://stackoverflow.com/a/26699122)), which results in boilerplate code and redundant definitions.
 
-The solution I've used here (perhaps the most novel part of this project) is to combine a solution proposed [here](https://stackoverflow.com/a/66266877) with the [attrs](https://www.attrs.org/en/stable/) package to automate defintion of signals for Model classes. 
+The solution I've used here (perhaps the most novel part of this project) is to combine a solution proposed [here](https://stackoverflow.com/a/66266877) with the [attrs](https://www.attrs.org/en/stable/) package to automate defintion of Signals and Slots on the Model classes. This is done in [util.py](https://github.com/tsj5/APBS_Qt_plugin/blob/main/APBS_Qt_plugin/util.py).
 
 ## Credits
 
