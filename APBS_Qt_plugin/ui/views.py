@@ -17,7 +17,7 @@ class PQRGroupBoxView(QtWidgets.QGroupBox, Ui_pqr_GroupBox):
         self.setupUi(self)
 
         # checkbox enables/disables dependent widgets
-        self.pqr_prepare_mol_checkBox.connect(self.on_prepare_mol_changed)
+        self.pqr_prepare_mol_checkBox.clicked.connect(self.on_prepare_mol_update)
 
         # combobox changes pane of stackedwidget
         self.pqr_method_comboBox.activated.connect(
@@ -25,7 +25,7 @@ class PQRGroupBoxView(QtWidgets.QGroupBox, Ui_pqr_GroupBox):
         )
 
     @QtCore.pyqtSlot(bool)
-    def on_prepare_mol_changed(self, b):
+    def on_prepare_mol_update(self, b):
         # enable/diable dependent controls
         for w in (
             self.pqr_method_stackedWidget,

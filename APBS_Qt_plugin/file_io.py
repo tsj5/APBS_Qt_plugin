@@ -55,8 +55,8 @@ class CustomPathBaseController(util.PYQT_QOBJECT):
         self.view.browse_lineEdit.textEdited.connect(self.on_browse_lineEdit_textEdited)
 
         # model -> view
-        self.model.path_changed.connect(self.view.browse_lineEdit.setText)
-        self.model.is_valid_changed.connect(self.on_isvalid_changed)
+        self.model.path_update.connect(self.view.browse_lineEdit.setText)
+        self.model.is_valid_update.connect(self.on_isvalid_update)
 
     @util.PYQT_SLOT(str)
     def on_browse_lineEdit_textEdited(self, new_path):
@@ -64,7 +64,7 @@ class CustomPathBaseController(util.PYQT_QOBJECT):
         pass
 
     @util.PYQT_SLOT(bool)
-    def on_isvalid_changed(self, b):
+    def on_isvalid_update(self, b):
         if b:
             self._ui.validated_label.setText(' ')
             self._ui.validated_label.setToolTip("")

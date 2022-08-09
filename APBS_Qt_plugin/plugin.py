@@ -47,7 +47,8 @@ class PluginController(util.BaseController):
         super(PluginController, self).__init__()
         self.model = PluginModel()
         self.view = PluginView() # initializes groupBoxes
-        util.connect_slot(self.view.run_button.clicked, self.run)
+
+        self.view.run_button.clicked.connect(self.model.run)
 
         # now init all dependent controllers:
 

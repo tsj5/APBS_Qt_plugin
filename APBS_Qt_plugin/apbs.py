@@ -19,38 +19,39 @@ from . import pymol_api, grid, util
 # ------------------------------------------------------------------------------
 # Models
 
-ApbsModeEnum = util.LabeledEnum("ApbsModeEnum",
-    {
-        'Nonlinear Poisson-Boltzmann Equation':  'npbe',
-        'Linearized Poisson-Boltzmann Equation': 'lpbe'
-    }
-)
+# TODO - implement LabeledEnum
+# ApbsModeEnum = util.LabeledEnum("ApbsModeEnum",
+#     {
+#         'Nonlinear Poisson-Boltzmann Equation':  'npbe',
+#         'Linearized Poisson-Boltzmann Equation': 'lpbe'
+#     }
+# )
 
-BcflEnum = util.LabeledEnum("BcflEnum",
-    {
-        'Zero': 'zero',
-        'Single DH sphere': 'sdh',
-        'Multiple DH spheres': 'mdh',
-        #'Focusing': 'focus',
-    }
-)
+# BcflEnum = util.LabeledEnum("BcflEnum",
+#     {
+#         'Zero': 'zero',
+#         'Single DH sphere': 'sdh',
+#         'Multiple DH spheres': 'mdh',
+#         #'Focusing': 'focus',
+#     }
+# )
 
-ChgmEnum = util.LabeledEnum("ChgmEnum",
-    {
-        'Linear': 'spl0',
-        'Cubic B-splines': 'spl2',
-        'Quintic B-splines': 'spl4',
-    }
-)
+# ChgmEnum = util.LabeledEnum("ChgmEnum",
+#     {
+#         'Linear': 'spl0',
+#         'Cubic B-splines': 'spl2',
+#         'Quintic B-splines': 'spl4',
+#     }
+# )
 
-SrfmEnum = util.LabeledEnum("SrfmEnum",
-    {
-        'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
-        'Same, but with harmonic average smoothing': 'smol',
-        'Cubic spline': 'spl2',
-        'Similar to cubic spline, but with 7th order polynomial': 'spl4'
-    }
-)
+# SrfmEnum = util.LabeledEnum("SrfmEnum",
+#     {
+#         'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
+#         'Same, but with harmonic average smoothing': 'smol',
+#         'Cubic spline': 'spl2',
+#         'Similar to cubic spline, but with 7th order polynomial': 'spl4'
+#     }
+# )
 
 @util.attrs_define
 class APBSModel(util.BaseModel):

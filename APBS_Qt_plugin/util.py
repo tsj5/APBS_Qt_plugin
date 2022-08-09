@@ -147,9 +147,9 @@ def connect_slot(signal, obj_w_slot, prop_name):
     signal.connect(getattr(obj_w_slot, p.slot_name))
 
 _AUTOCONNECT_SIGNAL_NAMES = {
-    QtWidgets.QCheckBox: ("stateChanged", "setChecked"),
-    QtWidgets.QComboBox: ("activated", "setCurrentIndex"),
-    QtWidgets.QLineEdit: ("textEdited", "setText")
+    QtWidgets.QCheckBox: ("clicked", "setChecked"), # bool
+    QtWidgets.QComboBox: ("activated", "setCurrentIndex"), # int
+    QtWidgets.QLineEdit: ("textEdited", "setText") # str
 } # others?
 
 def biconnect(view, model, model_prop_name):
@@ -240,7 +240,7 @@ class AutoSignalSlotMetaclass(type(PYQT_QOBJECT)):
         # hacky but necessary way to sync up associated Views with the Model. Model
         # needs to be instantiated before it's connect()ed to views, but this means
         # views don't know about inital values of model fields. To fix this, provide
-        # a method to manually fire all _*_changed signals for all model fields.
+        # a method to manually fire all *_update signals for all model fields.
         def _refresh(self):
             cls_ = type(self)
             for f in attrs.fields(cls_):

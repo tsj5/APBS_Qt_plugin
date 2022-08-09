@@ -205,14 +205,14 @@ class GridDialogView(QtWidgets.QDialog, Ui_grid_dialog):
         self.setupUi(self)
 
         # checkbox enables/disables dependent widgets
-        self.use_custom_checkBox.connect(self.on_use_custom_changed)
+        self.use_custom_checkBox.clicked.connect(self.on_use_custom_update)
 
         # connect OK/cancel
         self.dialog_buttons.accepted.connect(self.accept)
         self.dialog_buttons.rejected.connect(self.reject)
 
     @util.PYQT_SLOT(bool)
-    def on_use_custom_changed(self, b):
+    def on_use_custom_update(self, b):
         # enable/diable dependent controls
         for w in (
             self.auto_method_comboBox,
@@ -252,7 +252,7 @@ class GridController(util.BaseController):
 
         # view <-> multimodel
         util.biconnect(self.view.auto_method_comboBox, self.model, "multimodel_index")
-        self.view.use_custom_checkBox.stateChanged.connect(self.on_prepare_mol_changed)
+        self.view.use_custom_checkBox.stateChanged.connect(self.on_prepare_mol_update)
 
         # view <-> pdb2pqr_model
         util.biconnect(self.view.pqr_output_mol_lineEdit, pdb2pqr_model, "pqr_out_name")

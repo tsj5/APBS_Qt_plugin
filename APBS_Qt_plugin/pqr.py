@@ -228,7 +228,7 @@ class PQRController(util.BaseController):
 
         # view <-> multimodel
         util.biconnect(self.view.pqr_method_comboBox, self.model, "multimodel_index")
-        self.view.pqr_prepare_mol_checkBox.stateChanged.connect(self.on_prepare_mol_changed)
+        self.view.pqr_prepare_mol_checkBox.stateChanged.connect(self.on_prepare_mol_update)
 
         # view <-> pdb2pqr_model
         util.biconnect(self.view.pqr_output_mol_lineEdit, pdb2pqr_model, "pqr_out_name")
@@ -242,7 +242,7 @@ class PQRController(util.BaseController):
         self.model.refresh()
 
     @util.PYQT_SLOT(bool)
-    def on_prepare_mol_changed(self, b):
+    def on_prepare_mol_update(self, b):
         if b:
             # "do prepare" = either use pdb2pqr, or use pymol pqr and add Hs
             idx = self.view.pqr_method_comboBox.currentIndex()

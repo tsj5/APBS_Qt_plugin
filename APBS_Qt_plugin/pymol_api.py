@@ -77,11 +77,11 @@ class PyMolController(util.PYQT_QOBJECT):
             self.view.addItem(s)
 
         # view -> model
-        self.view.currentIndexChanged.connect()
+        # self.view.currentIndexChanged.connect() # TODO
         self.view.editTextChanged.connect(self.insert_custom_sel_value)
 
         # model -> view
-        self.model.sel_idx_changed.connect(self.view.setCurrentIndex)
+        self.model.sel_idx_update.connect(self.view.setCurrentIndex)
 
         # init view from model values
         self.model.refresh()
