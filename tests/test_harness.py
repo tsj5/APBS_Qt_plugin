@@ -5,7 +5,7 @@ import sys
 from pymol.Qt import QtWidgets
 
 this_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.dir_name(this_dir))
+sys.path.append(os.path.dirname(this_dir))
 import APBS_Qt_plugin.plugin as plugin
 import APBS_Qt_plugin.util as util
 

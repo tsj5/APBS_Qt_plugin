@@ -5,11 +5,10 @@ calculated potential back in PyMol.
 import logging
 _log = logging.getLogger(__name__)
 
-import pymol_api
+from . import pymol_api, util
 from pymol.Qt import QtWidgets
-from ui.other_viz_dialog_ui import Ui_other_viz_dialog
-from ui.views import VizGroupBoxView
-import util
+from .ui.other_viz_dialog_ui import Ui_other_viz_dialog
+from .ui.views import VizGroupBoxView
 
 # ------------------------------------------------------------------------------
 

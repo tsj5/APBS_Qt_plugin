@@ -4,9 +4,9 @@ View classes. Need to be in the ui package so that pyuic-generated imports work.
 
 from pymol.Qt import (QtCore, QtGui, QtWidgets)
 
-from pqr_groupBox_ui import Ui_pqr_GroupBox
-from apbs_groupBox_ui import Ui_apbs_GroupBox
-from viz_groupBox_ui import Ui_viz_GroupBox
+from .pqr_groupBox_ui import Ui_pqr_GroupBox
+from .apbs_groupBox_ui import Ui_apbs_GroupBox
+from .viz_groupBox_ui import Ui_viz_GroupBox
 
 # ------------------------------------------------------------------------------
 # GroupBoxes

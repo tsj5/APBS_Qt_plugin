@@ -9,9 +9,8 @@ import shlex
 import logging
 _log = logging.getLogger(__name__)
 
-import pymol_api
-from ui.views import VizGroupBoxView
-import util
+from . import pymol_api, util
+from .ui.views import VizGroupBoxView
 
 # ------------------------------------------------------------------------------
 # Models

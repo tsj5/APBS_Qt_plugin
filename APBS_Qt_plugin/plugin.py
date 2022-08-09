@@ -4,10 +4,9 @@ Top-level plugin state and logic.
 import logging
 _log = logging.getLogger(__name__)
 
-import pymol_api
 from pymol.Qt import QtWidgets
-from ui.plugin_dialog_ui import Ui_plugin_dialog
-import pqr, grid, apbs, visualization, util
+from .ui.plugin_dialog_ui import Ui_plugin_dialog
+from . import (pymol_api, pqr, grid, apbs, visualization, util)
 
 # ------------------------------------------------------------------------------
 # Models

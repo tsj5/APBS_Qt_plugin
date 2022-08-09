@@ -11,11 +11,10 @@ import textwrap
 
 _log = logging.getLogger(__name__)
 
-import pymol_api
 from pymol.Qt import QtWidgets
-from ui.views import APBSGroupBoxView
-from ui.apbs_dialog_ui import Ui_apbs_dialog
-import grid, util
+from .ui.views import APBSGroupBoxView
+from .ui.apbs_dialog_ui import Ui_apbs_dialog
+from . import pymol_api, grid, util
 
 # ------------------------------------------------------------------------------
 # Models

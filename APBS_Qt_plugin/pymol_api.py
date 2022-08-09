@@ -10,7 +10,7 @@ _log = logging.getLogger(__name__)
 
 import attrs
 import pymol.cmd as pymol_cmd
-import util
+from . import util
 
 # ------------------------------------------------------------------------------
 # Models

@@ -9,7 +9,7 @@
 
 from pymol.Qt import (QtCore, QtGui, QtWidgets)
 
-from views import (PQRGroupBoxView, APBSGroupBoxView, VizGroupBoxView)
+from .views import (PQRGroupBoxView, APBSGroupBoxView, VizGroupBoxView)
 
 class Ui_plugin_dialog(object):
     def setupUi(self, plugin_dialog):

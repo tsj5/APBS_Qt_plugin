@@ -8,10 +8,10 @@ import tempfile
 import logging
 _log = logging.getLogger(__name__)
 
-import util
+from . import util
 
 from pymol.Qt import (QtGui, QtWidgets)
-from ui.custom_path_widget_ui import Ui_CustomPathWidget
+from .ui.custom_path_widget_ui import Ui_CustomPathWidget
 
 @util.attrs_define
 class PathModelBase(util.PYQT_QOBJECT):
