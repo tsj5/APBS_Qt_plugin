@@ -8,7 +8,7 @@ import logging
 _log = logging.getLogger(__name__)
 
 import pymol_api
-from pymol.Qt.QtWidgets import QDialog
+from pymol.Qt import QtWidgets
 from ui.grid_dialog_ui import Ui_grid_dialog
 import util
 
@@ -200,7 +200,7 @@ class GridPluginModel(GridBaseModel):
 # ------------------------------------------------------------------------------
 # Views
 
-class GridDialogView(QDialog, Ui_grid_dialog):
+class GridDialogView(QtWidgets.QDialog, Ui_grid_dialog):
     def __init__(self, parent=None):
         super(GridDialogView, self).__init__(parent)
         self.setupUi(self)

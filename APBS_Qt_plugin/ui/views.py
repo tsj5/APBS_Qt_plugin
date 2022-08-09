@@ -1,20 +1,17 @@
 """
 View classes. Need to be in the ui package so that pyuic-generated imports work.
 """
-from pymol.Qt.QtCore import pyqtSlot
-from pymol.Qt.QtWidgets import QGroupBox
+
+from pymol.Qt import (QtCore, QtGui, QtWidgets)
 
 from pqr_groupBox_ui import Ui_pqr_GroupBox
 from apbs_groupBox_ui import Ui_apbs_GroupBox
 from viz_groupBox_ui import Ui_viz_GroupBox
 
-
-
-
 # ------------------------------------------------------------------------------
 # GroupBoxes
 
-class PQRGroupBoxView(QGroupBox, Ui_pqr_GroupBox):
+class PQRGroupBoxView(QtWidgets.QGroupBox, Ui_pqr_GroupBox):
     def __init__(self, parent=None):
         super(PQRGroupBoxView, self).__init__(parent)
         self.setupUi(self)
@@ -27,7 +24,7 @@ class PQRGroupBoxView(QGroupBox, Ui_pqr_GroupBox):
             self.pqr_method_stackedWidget.setCurrentIndex
         )
 
-    @pyqtSlot(bool)
+    @QtCore.pyqtSlot(bool)
     def on_prepare_mol_changed(self, b):
         # enable/diable dependent controls
         for w in (
@@ -37,12 +34,12 @@ class PQRGroupBoxView(QGroupBox, Ui_pqr_GroupBox):
             w.setEnabled(b)
             w.setDisabled(not b) # difference?
 
-class APBSGroupBoxView(QGroupBox, Ui_apbs_GroupBox):
+class APBSGroupBoxView(QtWidgets.QGroupBox, Ui_apbs_GroupBox):
     def __init__(self, parent=None):
         super(APBSGroupBoxView, self).__init__(parent)
         self.setupUi(self)
 
-class VizGroupBoxView(QGroupBox, Ui_viz_GroupBox):
+class VizGroupBoxView(QtWidgets.QGroupBox, Ui_viz_GroupBox):
     def __init__(self, parent=None):
         super(VizGroupBoxView, self).__init__(parent)
         self.setupUi(self)

@@ -10,7 +10,6 @@ _log = logging.getLogger(__name__)
 
 import attrs
 import pymol.cmd as pymol_cmd
-from pymol.Qt.QtWidgets import QComboBox
 import util
 
 # ------------------------------------------------------------------------------

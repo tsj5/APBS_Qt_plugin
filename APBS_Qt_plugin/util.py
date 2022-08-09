@@ -10,10 +10,7 @@ import pathlib
 
 _log = logging.getLogger(__name__)
 
-import pymol.Qt.QtCore as QtCore
-from pymol.Qt.QtWidgets import (
-    QWidget, QCheckBox, QComboBox, QLineEdit
-)
+from pymol.Qt import (QtCore, QtWidgets)
 
 # ------------------------------------------------------------------------------
 # Qt convenience classes
@@ -150,9 +147,9 @@ def connect_slot(signal, obj_w_slot, prop_name):
     signal.connect(getattr(obj_w_slot, p.slot_name))
 
 _AUTOCONNECT_SIGNAL_NAMES = {
-    QCheckBox: ("stateChanged", "setChecked"),
-    QComboBox: ("activated", "setCurrentIndex"),
-    QLineEdit: ("textEdited", "setText")
+    QtWidgets.QCheckBox: ("stateChanged", "setChecked"),
+    QtWidgets.QComboBox: ("activated", "setCurrentIndex"),
+    QtWidgets.QLineEdit: ("textEdited", "setText")
 } # others?
 
 def biconnect(view, model, model_prop_name):

@@ -6,7 +6,7 @@ import logging
 _log = logging.getLogger(__name__)
 
 import pymol_api
-from pymol.Qt.QtWidgets import QDialog
+from pymol.Qt import QtWidgets
 from ui.other_viz_dialog_ui import Ui_other_viz_dialog
 from ui.views import VizGroupBoxView
 import util
@@ -127,7 +127,7 @@ class VisualizationModel(util.BaseModel):
 # ------------------------------------------------------------------------------
 # Views
 
-class VizDialogView(QDialog, Ui_other_viz_dialog):
+class VizDialogView(QtWidgets.QDialog, Ui_other_viz_dialog):
     def __init__(self, parent=None):
         super(VizDialogView, self).__init__(parent)
         self.setupUi(self)

@@ -5,7 +5,7 @@ import logging
 _log = logging.getLogger(__name__)
 
 import pymol_api
-from pymol.Qt.QtWidgets import QDialog
+from pymol.Qt import QtWidgets
 from ui.plugin_dialog_ui import Ui_plugin_dialog
 import pqr, grid, apbs, visualization, util
 
@@ -35,7 +35,7 @@ class PluginModel(util.BaseModel):
 # ------------------------------------------------------------------------------
 # Views
 
-class PluginView(QDialog, Ui_plugin_dialog):
+class PluginView(QtWidgets.QDialog, Ui_plugin_dialog):
     def __init__(self, parent=None):
         super(PluginView, self).__init__(parent)
         self.setupUi(self)

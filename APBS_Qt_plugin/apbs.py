@@ -12,7 +12,7 @@ import textwrap
 _log = logging.getLogger(__name__)
 
 import pymol_api
-from pymol.Qt.QtWidgets import QDialog
+from pymol.Qt import QtWidgets
 from ui.views import APBSGroupBoxView
 from ui.apbs_dialog_ui import Ui_apbs_dialog
 import grid, util
@@ -145,7 +145,7 @@ class APBSModel(util.BaseModel):
 # ------------------------------------------------------------------------------
 # Views
 
-class APBSDialogView(QDialog, Ui_apbs_dialog):
+class APBSDialogView(QtWidgets.QDialog, Ui_apbs_dialog):
     def __init__(self, parent=None):
         super(APBSDialogView, self).__init__(parent)
         self.setupUi(self)

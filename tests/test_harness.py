@@ -2,8 +2,7 @@
 
 import os.path
 import sys
-
-import pymol.Qt.QtWidgets as QtWidgets
+from pymol.Qt import QtWidgets
 
 this_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.dir_name(this_dir))
