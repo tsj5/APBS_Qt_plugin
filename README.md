@@ -27,6 +27,12 @@ conda env create -f=conda.yml; conda activate APBS_Qt_Plugin
 
 To add the plugin in PyMol, select the `APBS_Qt_plugin` directory in the [Plugins manager](https://pymolwiki.org/index.php/Plugin_Manager).
 
+## Screenshots
+
+| Original UI                                                             | UI in incentive fork                                                    | This code                                                               |
+|:-----------------------------------------------------------------------:|:-----------------------------------------------------------------------:|:-----------------------------------------------------------------------:|
+| [<img src="./doc/img/screen1.jpg" style="height:600px;"/>](./doc/img/screen1.jpg) | [<img src="./doc/img/screen2.jpg" style="height:600px;"/>](./doc/img/screen2.jpg) | [<img src="./doc/img/screen3.jpg" style="height:600px;"/>](./doc/img/screen3.jpg) |
+
 ## Design considerations
 
 I've attempted to reorganize the code along the lines of the (hierarchical) Model-View-Controller pattern. This is *absolutely* overkill for an application whose scope is this small, but I wanted to use the project as a way to explore coding practices that scale to large applications.
