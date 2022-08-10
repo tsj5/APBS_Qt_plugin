@@ -31,7 +31,7 @@ To add the plugin in PyMol, select the `APBS_Qt_plugin` directory in the [Plugin
 
 | Original UI                                                             | UI in incentive fork                                                    | This code                                                               |
 |:-----------------------------------------------------------------------:|:-----------------------------------------------------------------------:|:-----------------------------------------------------------------------:|
-| [<img src="./doc/img/screen1.jpg" style="height:600px;"/>](./doc/img/screen1.jpg) | [<img src="./doc/img/screen2.jpg" style="height:600px;"/>](./doc/img/screen2.jpg) | [<img src="./doc/img/screen3.jpg" style="height:600px;"/>](./doc/img/screen3.jpg) |
+| [<img src="./doc/img/screen1.jpg"/>](./doc/img/screen1.jpg) | [<img src="./doc/img/screen2.jpg"/>](./doc/img/screen2.jpg) | [<img src="./doc/img/screen3.jpg"/>](./doc/img/screen3.jpg) |
 
 ## Design considerations
 
