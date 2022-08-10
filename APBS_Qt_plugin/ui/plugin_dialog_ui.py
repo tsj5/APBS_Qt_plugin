@@ -9,12 +9,12 @@
 
 from pymol.Qt import (QtCore, QtGui, QtWidgets)
 
-from .views import (PQRGroupBoxView, APBSGroupBoxView, VizGroupBoxView)
+from .views import (APBSGroupBoxView, PQRGroupBoxView, VizGroupBoxView)
 
 class Ui_plugin_dialog(object):
     def setupUi(self, plugin_dialog):
         plugin_dialog.setObjectName("plugin_dialog")
-        plugin_dialog.resize(480, 640)
+        plugin_dialog.resize(493, 927)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -27,6 +27,8 @@ class Ui_plugin_dialog(object):
         self.gridLayout = QtWidgets.QGridLayout()
         self.gridLayout.setObjectName("gridLayout")
         self.run_button = QtWidgets.QPushButton(plugin_dialog)
+        self.run_button.setAutoDefault(False)
+        self.run_button.setDefault(True)
         self.run_button.setObjectName("run_button")
         self.gridLayout.addWidget(self.run_button, 2, 1, 1, 1)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)

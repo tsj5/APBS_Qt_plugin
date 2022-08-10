@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>480</width>
-    <height>640</height>
+    <width>493</width>
+    <height>927</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -44,6 +44,12 @@
       <widget class="QPushButton" name="run_button">
        <property name="text">
         <string>Run</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
+       <property name="default">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
