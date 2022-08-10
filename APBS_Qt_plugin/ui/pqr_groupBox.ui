@@ -46,6 +46,18 @@
       <widget class="QStackedWidget" name="pqr_method_stackedWidget">
        <widget class="QWidget" name="page_pdb2pqr">
         <layout class="QGridLayout" name="gridLayout_4">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
          <item row="0" column="0">
           <layout class="QGridLayout" name="gridLayout_3">
            <item row="1" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
@@ -55,8 +67,13 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="0" colspan="2" alignment="Qt::AlignLeft|Qt::AlignTop">
+           <item row="0" column="0" colspan="2" alignment="Qt::AlignTop">
             <widget class="QLabel" name="label_3">
+             <property name="font">
+              <font>
+               <italic>true</italic>
+              </font>
+             </property>
              <property name="text">
               <string>pdb2pqr adds hydrogens and missing sidechain atoms and assigns partial charges and radii.
 It removes ligands and modified residues.</string>
@@ -98,10 +115,27 @@ It removes ligands and modified residues.</string>
        </widget>
        <widget class="QWidget" name="page_pymol">
         <layout class="QGridLayout" name="gridLayout_6">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
          <item row="0" column="0">
           <layout class="QGridLayout" name="gridLayout_5">
-           <item row="0" column="0" alignment="Qt::AlignLeft|Qt::AlignTop">
+           <item row="0" column="0" alignment="Qt::AlignTop">
             <widget class="QLabel" name="label_5">
+             <property name="font">
+              <font>
+               <italic>true</italic>
+              </font>
+             </property>
              <property name="text">
               <string>PyMOL can directly generate PQR files using standard protein residues and AMBER charges.</string>
              </property>
