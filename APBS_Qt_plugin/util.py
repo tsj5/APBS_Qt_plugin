@@ -163,11 +163,39 @@ def attrs_define(cls=None, **deco_kwargs):
     # apply the original attrs dataclass decorator
     return attrs.define(cls, **deco_kwargs)
 
-_AUTOSIGNAL_TYPE_COERCE = {
-    list: 'QVariantList', dict: 'QVariantMap',
-    pathlib.Path: str, # need to understand typing of signals better
-    enum.Enum: int
-}
+# Is this necessary? Does pyqtSignal auto-coerce from python types?
+def _coerce_type_to_signal(t):
+    return {
+        list: 'QVariantList', dict: 'QVariantMap', # needed by _MAKE_NOTIFIED
+        pathlib.Path: str,
+        enum.Enum: int
+        # other cases?
+    }.get(t, t)
+
+def _type_from_signal(signal):
+    sigs = getattr(signal, "signatures", None)
+    if sigs:
+        assert len(sigs) == 1
+        sigs = sigs[0]
+    else:
+        assert hasattr(signal, "signal")
+        sigs = signal.signal
+
+    if sigs.endswith('QVariantList)'):
+        return list
+    elif sigs.endswith('QVariantMap)'):
+        return dict
+    elif sigs.endswith('bool)'):
+        return bool
+    elif sigs.endswith('int)'):
+        return int
+    elif sigs.endswith('double)'):
+        return float
+    elif sigs.endswith('str)'):
+        return str
+    else:
+        raise ValueError(sigs)
+
 
 class AutoSignalSlotMetaclass(type(PYQT_QOBJECT)):
     """Metaclass for dynamically associating PyQt Properties and Signals with
@@ -179,7 +207,7 @@ class AutoSignalSlotMetaclass(type(PYQT_QOBJECT)):
             # decorator so we need to pass through; make definitions on second call.
 
             for f in attrs_['__attrs_attrs__']:
-                signal_type = _AUTOSIGNAL_TYPE_COERCE.get(f.type, f.type)
+                signal_type = _coerce_type_to_signal(f.type)
                 if attrs.has(f.type) or issubclass(f.type, PYQT_QOBJECT):
                     # don't define new signals/slots for nested Model objects
                     continue
@@ -209,12 +237,12 @@ class BaseModel(PYQT_QOBJECT, metaclass = AutoSignalSlotMetaclass):
     def wrapped_emit(self, name, value):
         p = PropertyNames.from_name(name)
         signal = getattr(self, p.signal_name, None)
+        # assume that pyqtSignal auto-coerces argument
         if signal:
-            signal_type = signal.type
             if hasattr(value, "coerce_to_signal"):
-                val = value.coerce_to_signal(signal_type)
+                val = value.coerce_to_signal(signal)
             else:
-                val = signal_type(value)
+                val = _type_from_signal(signal)(value)
             signal.emit(val)
 
     def refresh(self):
