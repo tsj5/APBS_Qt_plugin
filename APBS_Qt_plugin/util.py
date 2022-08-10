@@ -286,12 +286,20 @@ class BaseController(PYQT_QOBJECT):
     pass
 
 @attrs_define
-class MultiModel(PYQT_QOBJECT):
+class _MultiModelIndex(BaseModel):
+    """Index for MultiModel class, wrapped to emit Signals on changed."""
+    index: int = 0
+
+class MultiModel():
     """Wrapper for a collection of Models: maintains state of all models, but
     attributes are only looked up on the currently active Model.
     """
-    multimodel_index: int = 0
-    models: list = attrs.Factory(list)
+    def __init__(self, *models, index=0):
+        self.multimodel = _MultiModelIndex(index=index)
+        self.models = models
+
+    def refresh(self):
+        self.multimodel.refresh()
 
     def __getattr__(self, name):
         """Pass through all attribute access to the currently selected Model.
@@ -300,17 +308,14 @@ class MultiModel(PYQT_QOBJECT):
             # Throws exception if not in prototype chain
             return object.__getattribute__(self, name)
         except AttributeError:
-            return getattr(self.models[self.multimodel_index], name)
+            return getattr(self.models[self.multimodel.index], name)
 
     def __setattr__(self, name, value):
         """Pass through all attribute access to the currently selected Model.
         """
-        try:
-            # Throws exception if not in prototype chain
-            _ = object.__getattribute__(self, name)
-        except AttributeError:
+        if name not in ('multimodel', 'models'): # unfortunately need to hardcode, else init breaks
             try:
-                setattr(self.models[self.multimodel_index], name, value)
+                setattr(self.models[self.multimodel.index], name, value)
             except Exception:
                 raise AttributeError(name)
         else:

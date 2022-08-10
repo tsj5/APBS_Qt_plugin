@@ -21,7 +21,7 @@ class PQRBaseModel(util.BaseModel):
     """
     pymol_cmd: pymol_api.PyMolModel
     prepare_pqr: bool = True
-    pqr_out_file: pathlib.Path
+    pqr_out_file: pathlib.Path = ""
     pqr_out_name: str = "prepared"
 
     def write_selection_to_file(self, sel, path):
@@ -67,10 +67,10 @@ class PQRBaseModel(util.BaseModel):
 class PPQRDB2PQRModel(PQRBaseModel):
     """Config state for generating a PQR file using the pdb2pqr binary.
     """
-    pdb2pqr_path: pathlib.Path
-    pdb_out_file: pathlib.Path
-    pdb2pqr_flags: str
-    ignore_warn: bool
+    pdb2pqr_path: pathlib.Path = ""
+    pdb_out_file: pathlib.Path = ""
+    pdb2pqr_flags: str = "--ff=AMBER"
+    ignore_warn: bool = False
 
     @staticmethod
     def get_unassigned_atoms(pqr_txt):
@@ -208,13 +208,14 @@ class PQRController(util.BaseController):
         super(PQRController, self).__init__()
         if pymol_controller is None:
             raise ValueError
+
         pdb2pqr_model = PPQRDB2PQRModel(
             pymol_cmd = pymol_controller.model.pymol_instance
         )
         pymol_model = PQRPyMolModel(
             pymol_cmd = pymol_controller.model.pymol_instance
         )
-        self.model = util.MultiModel(models = [pdb2pqr_model, pymol_model])
+        self.model = util.MultiModel(pdb2pqr_model, pymol_model)
         if view is None:
             self.view = VizGroupBoxView()
         else:
@@ -227,7 +228,7 @@ class PQRController(util.BaseController):
         self.view.pqr_method_comboBox.setIndex(0)
 
         # view <-> multimodel
-        util.biconnect(self.view.pqr_method_comboBox, self.model, "multimodel_index")
+        util.biconnect(self.view.pqr_method_comboBox, self.model.multimodel, "index")
         self.view.pqr_prepare_mol_checkBox.stateChanged.connect(self.on_prepare_mol_update)
 
         # view <-> pdb2pqr_model

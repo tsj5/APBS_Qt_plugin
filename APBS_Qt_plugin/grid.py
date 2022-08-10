@@ -7,6 +7,7 @@ import math
 import logging
 _log = logging.getLogger(__name__)
 
+import attrs
 from pymol.Qt import QtWidgets
 from .ui.grid_dialog_ui import Ui_grid_dialog
 from . import pymol_api, util
@@ -21,10 +22,10 @@ class GridBaseModel(util.BaseModel):
     """Config state shared by all GridModels.
     """
     pymol_cmd: pymol_api.PyMolModel
-    coarse_dim: list
-    fine_dim: list
-    fine_grid_points: list
-    center: list
+    coarse_dim: list = attrs.Factory(list)
+    fine_dim: list = attrs.Factory(list)
+    fine_grid_points: list = attrs.Factory(list)
+    center: list = attrs.Factory(list)
     max_mem_allowed: int = 2500
 
     @staticmethod
@@ -241,7 +242,7 @@ class GridController(util.BaseController):
         psize_model = GridPSizeModel(
             pymol_cmd = pymol_controller.model.pymol_instance
         )
-        self.model = util.MultiModel(models = [plugin_model, psize_model])
+        self.model = util.MultiModel(plugin_model, psize_model)
         self.view = GridDialogView()
 
         # populate Method comboBox
@@ -251,7 +252,7 @@ class GridController(util.BaseController):
         self.view.auto_method_comboBox.setIndex(0)
 
         # view <-> multimodel
-        util.biconnect(self.view.auto_method_comboBox, self.model, "multimodel_index")
+        util.biconnect(self.view.auto_method_comboBox, self.model.multimodel, "index")
         self.view.use_custom_checkBox.stateChanged.connect(self.on_prepare_mol_update)
 
         # view <-> pdb2pqr_model
