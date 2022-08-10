@@ -224,10 +224,6 @@ class GridDialogView(QtWidgets.QDialog, Ui_grid_dialog):
             w.setEnabled(b)
             w.setDisabled(not b) # difference?
 
-    @util.PYQT_SLOT()
-    def exec_(self):
-        self.view.exec_()
-
 # ------------------------------------------------------------------------------
 # Controllers
 
@@ -253,16 +249,24 @@ class GridController(util.BaseController):
 
         # view <-> multimodel
         util.biconnect(self.view.auto_method_comboBox, self.model.multimodel, "index")
-        self.view.use_custom_checkBox.clicked.connect(self.on_prepare_mol_update)
 
-        # view <-> pdb2pqr_model
-        util.biconnect(self.view.pqr_output_mol_lineEdit, pdb2pqr_model, "pqr_out_name")
-        util.biconnect(self.view.pdb2pqr_flags_lineEdit, pdb2pqr_model, "pdb2pqr_flags")
-        util.biconnect(self.view.pdb2pqr_warnings_checkBox, pdb2pqr_model, "ignore_warn")
+        # view <-> plugin_model
+        util.biconnect(self.view.spinBox, plugin_model, "max_mem_allowed")
+        self.view.calculate_button.clicked.connect(plugin_model.set_grid_params)
+        # TODO: grid_tableWidget
+        # TODO: groupBox apbs_finegrid_doubleSpinBox
 
-        # view <-> pymol_model
-        util.biconnect(self.view.pqr_output_mol_lineEdit, pymol_model, "pqr_out_name")
+        # view <-> psize_model
+        util.biconnect(self.view.spinBox, psize_model, "max_mem_allowed")
+        self.view.calculate_button.clicked.connect(psize_model.set_grid_params)
+        # TODO: grid_tableWidget
+        # TODO: groupBox apbs_finegrid_doubleSpinBox
 
         # init view from model values
         self.model.refresh()
+
+    @util.PYQT_SLOT()
+    def exec_(self):
+        self.view.exec_()
+
 

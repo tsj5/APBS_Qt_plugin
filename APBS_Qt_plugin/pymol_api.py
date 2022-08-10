@@ -50,13 +50,26 @@ class PyMolModel(util.BaseModel):
         # always include explicitly specified hydrogens -- make this an option?
         return f"(({self.selection}) or (neighbor ({self.selection}) and hydro))"
 
-    def get_default_sel_values(self):
+    def _get_default_sel_values(self):
         # TODO: is this a reasonable default? List all object:molecules?
         new_values = ['polymer']
         new_values.extend(
             [f"polymer & {s}" for s in self.pymol_instance.get_object_list('polymer')]
         )
         return new_values
+
+    @util.PYQT_SLOT(int)
+    def on_sel_idx_update(self, new_sel_idx):
+        if len(self.model.sel_values) == 0 and new_sel_idx == 0:
+            # don't throw error on init... need better way to do this
+            self.sel_idx = new_sel_idx
+
+        try:
+            _ = self.sel_values.__getitem__(new_sel_idx)
+        except IndexError:
+            raise util.PluginDialogException(f"Selection index {new_sel_idx} out "
+                f"of range {self.sel_idx}/{len(self.model.sel_values)}")
+        self.sel_idx = new_sel_idx
 
 # ------------------------------------------------------------------------------
 # Controllers
@@ -71,37 +84,24 @@ class PyMolController(util.PYQT_QOBJECT):
         # changes to state to pymol_instance "model"
         self.view = view
 
-        # init combobox
+        # init model and combobox entries
+        self.get_pymol_sel_values()
         self.view.clear()
         for s in self.model.sel_values:
             self.view.addItem(s)
 
-        # view -> model
-        # self.view.currentIndexChanged.connect() # TODO
+        # view (comboBox) <-> model
+        util.biconnect(self.view, self.model, "sel_idx")
         self.view.editTextChanged.connect(self.insert_custom_sel_value)
-
-        # model -> view
-        self.model.sel_idx_update.connect(self.view.setCurrentIndex)
 
         # init view from model values
         self.model.refresh()
 
-
-    @util.PYQT_SLOT(int)
-    def change_selection(self, new_sel_idx):
-        try:
-            _ = self.model.sel_values.__getitem__(new_sel_idx)
-        except IndexError:
-            raise util.PluginDialogException("Selection index out of range "
-            f"{self.model.sel_idx}/{len(self.model.sel_values)}")
-        self.model.sel_idx = new_sel_idx
-
-    @util.PYQT_SLOT()
     def get_pymol_sel_values(self):
         """Populate selection values based on current pymol state.
         """
+        self.model.sel_values = self.model._get_default_sel_values()
         old_sel = self.model.selection
-        self.model.sel_values = self._get_default_sel_values()
         if old_sel in self.model.sel_values:
             self.model.sel_idx = self.model.sel_values.index(old_sel)
         else:
@@ -119,7 +119,7 @@ class PyMolController(util.PYQT_QOBJECT):
         # remove enclosing parentheses, if any; restored by pymol_selection()
         value_str = value_str.strip('()')
 
-        new_values = self._get_default_sel_values()
+        new_values = self.model._get_default_sel_values()
         new_values.append(value_str)
         self.model.sel_values = new_values
         self.model.sel_idx = len(new_values)

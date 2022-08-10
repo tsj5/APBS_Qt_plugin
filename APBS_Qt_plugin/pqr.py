@@ -240,7 +240,8 @@ class PQRController(util.BaseController):
         util.biconnect(self.view.pqr_output_mol_lineEdit, pymol_model, "pqr_out_name")
 
         # init view from model values
-        self.model.refresh()
+        pdb2pqr_model.refresh()
+        pymol_model.refresh()
 
     @util.PYQT_SLOT(bool)
     def on_prepare_mol_update(self, b):

@@ -176,6 +176,8 @@ class APBSDialogController(util.BaseController):
         self.model.chgm.init_combobox(self.view.mode_comboBox)
         self.model.srfm.init_combobox(self.view.surf_calc_comboBox)
 
+        # TODO: ions_tableWidget
+
         # init view from model values
         self.model.refresh()
 
@@ -204,12 +206,12 @@ class APBSGroupBoxController(util.BaseController):
         else:
             self.view = view
 
-        util.connect_slot(self.view.apbs_options_button.clicked, self.dialog_controller.exec_)
-        util.connect_slot(self.view.apbs_grid_options_button.clicked, self.grid_controller.exec_)
+        self.view.apbs_options_button.clicked.connect(self.dialog_controller.exec_)
+        self.view.apbs_grid_options_button.clicked.connect(self.grid_controller.exec_)
 
-        util.biconnect(self.view.apbs_calculate_checkBox, self.model, XXX)
-        util.biconnect(self.view.apbs_focus_lineEdit, self.model, XXX)
-        util.biconnect(self.view.apbs_outputmap_lineEdit, self.model, XXX)
+        #util.biconnect(self.view.apbs_calculate_checkBox, self.model, XXX)
+        #util.biconnect(self.view.apbs_focus_lineEdit, self.model, XXX)
+        util.biconnect(self.view.apbs_outputmap_lineEdit, self.model, "apbs_map_name")
 
         # init view from model values
         self.model.refresh()
