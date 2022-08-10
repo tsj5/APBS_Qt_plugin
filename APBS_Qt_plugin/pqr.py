@@ -221,15 +221,15 @@ class PQRController(util.BaseController):
         else:
             self.view = view
 
-        # populate Method comboBox
+        # populate Method comboBox -- need to wrap as an Enum
         self.view.pqr_method_comboBox.clear()
         self.view.pqr_method_comboBox.addItem("Using pdb2pqr")
         self.view.pqr_method_comboBox.addItem("Using PyMol")
-        self.view.pqr_method_comboBox.setIndex(0)
+        self.view.pqr_method_comboBox.setCurrentIndex(0)
 
         # view <-> multimodel
         util.biconnect(self.view.pqr_method_comboBox, self.model.multimodel, "index")
-        self.view.pqr_prepare_mol_checkBox.stateChanged.connect(self.on_prepare_mol_update)
+        self.view.pqr_prepare_mol_checkBox.clicked.connect(self.on_prepare_mol_update)
 
         # view <-> pdb2pqr_model
         util.biconnect(self.view.pqr_output_mol_lineEdit, pdb2pqr_model, "pqr_out_name")

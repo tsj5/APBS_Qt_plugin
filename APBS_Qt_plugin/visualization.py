@@ -144,16 +144,6 @@ class VizDialogController(util.BaseController):
         self.model = model
         self.view = VizDialogView()
 
-        util.biconnect(self.view.mode_comboBox, self.model, "apbs_mode")
-        util.biconnect(self.view.protein_eps_lineEdit, self.model, "interior_dielectric")
-        util.biconnect(self.view.solvent_eps_lineEdit, self.model, "solvent_dielectric")
-        util.biconnect(self.view.solvent_r_lineEdit, self.model, "solvent_radius")
-        util.biconnect(self.view.vacc_lineEdit, self.model, "sdens")
-        util.biconnect(self.view.sys_temp_lineEdit, self.model, "system_temp")
-        util.biconnect(self.view.bc_comboBox, self.model, "bcfl")
-        util.biconnect(self.view.charge_disc_comboBox, self.model, "chgm")
-        util.biconnect(self.view.surf_calc_comboBox, self.model, "srfm")
-
         # init view from model values
         self.model.refresh()
 
@@ -176,10 +166,6 @@ class VizGroupBoxController(util.BaseController):
             self.view = view
 
         util.connect_slot(self.view.other_viz_options_button.clicked, self.dialog_controller.exec_)
-
-        util.biconnect(self.view.apbs_calculate_checkBox, self.model, XXX)
-        util.biconnect(self.view.apbs_focus_lineEdit, self.model, XXX)
-        util.biconnect(self.view.apbs_outputmap_lineEdit, self.model, XXX)
 
         # init view from model values
         self.model.refresh()

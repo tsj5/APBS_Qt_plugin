@@ -162,14 +162,19 @@ class APBSDialogController(util.BaseController):
         self.view = APBSDialogView()
 
         util.biconnect(self.view.mode_comboBox, self.model, "apbs_mode")
-        util.biconnect(self.view.protein_eps_lineEdit, self.model, "interior_dielectric")
-        util.biconnect(self.view.solvent_eps_lineEdit, self.model, "solvent_dielectric")
-        util.biconnect(self.view.solvent_r_lineEdit, self.model, "solvent_radius")
-        util.biconnect(self.view.vacc_lineEdit, self.model, "sdens")
-        util.biconnect(self.view.sys_temp_lineEdit, self.model, "system_temp")
+        util.biconnect(self.view.protein_eps_doubleSpinBox, self.model, "interior_dielectric")
+        util.biconnect(self.view.solvent_eps_doubleSpinBox, self.model, "solvent_dielectric")
+        util.biconnect(self.view.solvent_r_doubleSpinBox, self.model, "solvent_radius")
+        util.biconnect(self.view.vacc_doubleSpinBox, self.model, "sdens")
+        util.biconnect(self.view.sys_temp_doubleSpinBox, self.model, "system_temp")
         util.biconnect(self.view.bc_comboBox, self.model, "bcfl")
         util.biconnect(self.view.charge_disc_comboBox, self.model, "chgm")
         util.biconnect(self.view.surf_calc_comboBox, self.model, "srfm")
+
+        self.model.apbs_mode.init_combobox(self.view.mode_comboBox)
+        self.model.bcfl.init_combobox(self.view.bc_comboBox)
+        self.model.chgm.init_combobox(self.view.mode_comboBox)
+        self.model.srfm.init_combobox(self.view.surf_calc_comboBox)
 
         # init view from model values
         self.model.refresh()

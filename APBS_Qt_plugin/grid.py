@@ -245,15 +245,15 @@ class GridController(util.BaseController):
         self.model = util.MultiModel(plugin_model, psize_model)
         self.view = GridDialogView()
 
-        # populate Method comboBox
+        # populate Method comboBox -- need to wrap as an Enum
         self.view.auto_method_comboBox.clear()
         self.view.auto_method_comboBox.addItem("Using plugin")
         self.view.auto_method_comboBox.addItem("Using APBS PSize")
-        self.view.auto_method_comboBox.setIndex(0)
+        self.view.auto_method_comboBox.setCurrentIndex(0)
 
         # view <-> multimodel
         util.biconnect(self.view.auto_method_comboBox, self.model.multimodel, "index")
-        self.view.use_custom_checkBox.stateChanged.connect(self.on_prepare_mol_update)
+        self.view.use_custom_checkBox.clicked.connect(self.on_prepare_mol_update)
 
         # view <-> pdb2pqr_model
         util.biconnect(self.view.pqr_output_mol_lineEdit, pdb2pqr_model, "pqr_out_name")

@@ -6,14 +6,14 @@ _log = logging.getLogger(__name__)
 
 from pymol.Qt import QtWidgets
 from .ui.plugin_dialog_ui import Ui_plugin_dialog
-from . import (pymol_api, pqr, grid, apbs, visualization, util)
+from . import (pymol_api, pqr, apbs, visualization, util)
 
 # ------------------------------------------------------------------------------
 # Models
 
+@util.attrs_define
 class PluginModel(util.BaseModel):
     pqr_model: util.BaseModel
-    grid_model: util.BaseModel
     apbs_model: util.BaseModel
     viz_model: util.BaseModel
 
@@ -45,36 +45,31 @@ class PluginView(QtWidgets.QDialog, Ui_plugin_dialog):
 class PluginController(util.BaseController):
     def __init__(self):
         super(PluginController, self).__init__()
-        self.model = PluginModel()
         self.view = PluginView() # initializes groupBoxes
 
-        self.view.run_button.clicked.connect(self.model.run)
-
-        # now init all dependent controllers:
-
+        # init all dependent controllers:
         self.pymol_controller = pymol_api.PyMolController(
             view = self.view.selection_comboBox
         )
-
         self.pqr_controller = pqr.PQRController(
             pymol_controller = self.pymol_controller,
             view = self.view.pqr_groupBox
         )
-        self.model.pqr_model = self.pqr_controller.model
-
         self.abps_controller = apbs.APBSGroupBoxController(
             pymol_controller = self.pymol_controller,
             view = self.view.apbs_groupBox
         )
-        self.model.apbs_model = self.abps_controller.model
-
         self.viz_controller = visualization.VizGroupBoxController(
             pymol_controller = self.pymol_controller,
             view = self.view.viz_groupBox
         )
-        self.model.viz_model = self.viz_controller.model
 
-        # init view from model values
+        self.model = PluginModel(
+            pqr_model = self.pqr_controller.model,
+            apbs_model = self.abps_controller.model,
+            viz_model = self.viz_controller.model
+        )
+        self.view.run_button.clicked.connect(self.model.run)
         self.model.refresh()
 
     def show(self):

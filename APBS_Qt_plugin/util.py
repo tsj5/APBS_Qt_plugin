@@ -166,12 +166,16 @@ def attrs_define(cls=None, **deco_kwargs):
 
 # Is this necessary? Does pyqtSignal auto-coerce from python types?
 def _coerce_type_to_signal(t):
-    return {
+    new_t = t
+    for k,v in {
         list: 'QVariantList', dict: 'QVariantMap', # needed by _MAKE_NOTIFIED
         pathlib.Path: str,
         enum.Enum: int
         # other cases?
-    }.get(t, t)
+    }.items():
+        if issubclass(t, k):
+            new_t = v
+    return new_t
 
 def _type_from_signal(signal):
     sigs = getattr(signal, "signatures", None)
@@ -192,7 +196,7 @@ def _type_from_signal(signal):
         return int
     elif sigs.endswith('double)'):
         return float
-    elif sigs.endswith('str)'):
+    elif sigs.endswith('str)') or sigs.endswith('QString)'):
         return str
     else:
         raise ValueError(sigs)
@@ -208,11 +212,11 @@ class AutoSignalSlotMetaclass(type(PYQT_QOBJECT)):
             # decorator so we need to pass through; make definitions on second call.
 
             for f in attrs_['__attrs_attrs__']:
-                signal_type = _coerce_type_to_signal(f.type)
                 if attrs.has(f.type) or issubclass(f.type, PYQT_QOBJECT):
                     # don't define new signals/slots for nested Model objects
                     continue
 
+                signal_type = _coerce_type_to_signal(f.type)
                 p = PropertyNames.from_name(f.name)
                 if p.signal_name not in attrs_:
                     # auto-generate signal
@@ -267,7 +271,9 @@ def connect_slot(signal, obj_w_slot, prop_name):
 _AUTOCONNECT_SIGNAL_NAMES = {
     QtWidgets.QCheckBox: ("clicked", "setChecked"), # bool
     QtWidgets.QComboBox: ("activated", "setCurrentIndex"), # int
-    QtWidgets.QLineEdit: ("textEdited", "setText") # str
+    QtWidgets.QLineEdit: ("textEdited", "setText"), # str
+    QtWidgets.QSpinBox: ("valueChanged", "setValue"), # int
+    QtWidgets.QDoubleSpinBox: ("valueChanged", "setValue") # float
 } # others?
 
 def biconnect(view, model, model_prop_name):
