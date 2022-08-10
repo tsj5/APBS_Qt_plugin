@@ -7,6 +7,7 @@ import enum
 import functools
 import logging
 import pathlib
+import typing
 
 _log = logging.getLogger(__name__)
 
@@ -272,7 +273,7 @@ _AUTOCONNECT_SIGNAL_NAMES = {
 def biconnect(view, model, model_prop_name):
     connected = False
     for k,v in _AUTOCONNECT_SIGNAL_NAMES.items():
-        if issubclass(view, k):
+        if isinstance(view, k):
             v_signal_name, v_slot_name = v
             connect_signal(model, model_prop_name, getattr(view, v_slot_name))
             connect_slot(getattr(view, v_signal_name), model, model_prop_name)
@@ -323,6 +324,37 @@ class MultiModel():
 
 # ------------------------------------------------------------------------------
 
+def labeled_enum_factory(cls_name, cls_values):
+    # coerce cls_values to a dict of enum names : comboBox labels
+    if isinstance(cls_values, str):
+        cls_values = cls_values.split()
+    if isinstance(cls_values, typing.Sequence):
+        cls_values = {v:v for v in cls_values}
+
+    # start=0 to support cast from int -- comboBox index starts at 0
+    cls_ = enum.Enum(cls_name, tuple(cls_values.keys()), start=0)
+    # add methods
+    def _str(self):
+        return self.name
+    cls_.__str__ = _str
+    def _int(self):
+        return self.value
+    cls_.__int__ = _int
+
+    def _init_combobox(self, comboBox):
+        comboBox.clear()
+        for v in cls_values.values():
+            # unsure if this will actually mark strings as translatable, or needs
+            # to be in a QObject
+            comboBox.addItem(QtCore.QT_TR_NOOP(v))
+        comboBox.setCurrentIndex(int(self))
+    cls_.init_combobox = _init_combobox
+
+    # signals/slots will be assigned when this is used as a field in a decorated Model
+    # Enum is not itself a QObject, and has no signals/slots of its own
+    return cls_
+
+# ------------------------------------------------------------------------------
 class PluginException(Exception):
     """Base class for all exceptions raised by plugin's code.
     """

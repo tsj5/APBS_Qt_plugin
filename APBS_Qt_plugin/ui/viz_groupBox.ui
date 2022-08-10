@@ -72,6 +72,9 @@
        <property name="textFormat">
         <enum>Qt::PlainText</enum>
        </property>
+       <property name="buddy">
+        <cstring>viz_range_doubleSpinBox</cstring>
+       </property>
       </widget>
      </item>
      <item row="6" column="2">
@@ -94,7 +97,7 @@
       </widget>
      </item>
      <item row="3" column="1" alignment="Qt::AlignVCenter">
-      <widget class="QDoubleSpinBox" name="viz_range_spinBox"/>
+      <widget class="QDoubleSpinBox" name="viz_range_doubleSpinBox"/>
      </item>
      <item row="2" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
       <widget class="QLabel" name="label_2">
@@ -103,6 +106,9 @@
        </property>
        <property name="textFormat">
         <enum>Qt::PlainText</enum>
+       </property>
+       <property name="buddy">
+        <cstring>viz_map_comboBox</cstring>
        </property>
       </widget>
      </item>
@@ -126,6 +132,9 @@
        </property>
        <property name="textFormat">
         <enum>Qt::PlainText</enum>
+       </property>
+       <property name="buddy">
+        <cstring>viz_ramp_lineEdit</cstring>
        </property>
       </widget>
      </item>

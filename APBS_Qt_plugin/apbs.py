@@ -19,39 +19,38 @@ from . import pymol_api, grid, util
 # ------------------------------------------------------------------------------
 # Models
 
-# TODO - implement LabeledEnum
-# ApbsModeEnum = util.LabeledEnum("ApbsModeEnum",
-#     {
-#         'Nonlinear Poisson-Boltzmann Equation':  'npbe',
-#         'Linearized Poisson-Boltzmann Equation': 'lpbe'
-#     }
-# )
+ApbsModeEnum = util.labeled_enum_factory("ApbsModeEnum",
+    {
+        'npbe': 'Nonlinear Poisson-Boltzmann Equation',
+        'lpbe': 'Linearized Poisson-Boltzmann Equation'
+    }
+)
 
-# BcflEnum = util.LabeledEnum("BcflEnum",
-#     {
-#         'Zero': 'zero',
-#         'Single DH sphere': 'sdh',
-#         'Multiple DH spheres': 'mdh',
-#         #'Focusing': 'focus',
-#     }
-# )
+BcflEnum = util.labeled_enum_factory("BcflEnum",
+    {
+        'zero': 'Zero',
+        'sdh': 'Single DH sphere',
+        'mdh': 'Multiple DH spheres',
+        'focus': 'Focusing'
+    }
+)
 
-# ChgmEnum = util.LabeledEnum("ChgmEnum",
-#     {
-#         'Linear': 'spl0',
-#         'Cubic B-splines': 'spl2',
-#         'Quintic B-splines': 'spl4',
-#     }
-# )
+ChgmEnum = util.labeled_enum_factory("ChgmEnum",
+    {
+        'spl0': 'Linear',
+        'spl2': 'Cubic B-splines',
+        'spl4': 'Quintic B-splines'
+    }
+)
 
-# SrfmEnum = util.LabeledEnum("SrfmEnum",
-#     {
-#         'Mol surf for epsilon; inflated VdW for kappa, no smoothing': 'mol',
-#         'Same, but with harmonic average smoothing': 'smol',
-#         'Cubic spline': 'spl2',
-#         'Similar to cubic spline, but with 7th order polynomial': 'spl4'
-#     }
-# )
+SrfmEnum = util.labeled_enum_factory("SrfmEnum",
+    {
+        'mol': 'Mol surf for epsilon; inflated VdW for kappa, no smoothing',
+        'smol': 'Same, but with harmonic average smoothing',
+        'spl2': 'Cubic spline', # valid?
+        'spl4': 'Similar to cubic spline, but with 7th order polynomial'
+    }
+)
 
 @util.attrs_define
 class APBSModel(util.BaseModel):
@@ -59,13 +58,13 @@ class APBSModel(util.BaseModel):
     """
     pymol_cmd: pymol_api.PyMolModel
 
-    apbs_path: pathlib.Path
-    apbs_config_file: pathlib.Path
-    apbs_dx_file: pathlib.Path
-    apbs_map_name: str
+    apbs_path: pathlib.Path = ""
+    apbs_config_file: pathlib.Path = ""
+    apbs_dx_file: pathlib.Path = ""
+    apbs_map_name: str = "apbs_map"
 
-    apbs_mode: str = ""
-    bcfl: str = 'Single DH sphere' # Boundary condition flag
+    apbs_mode: ApbsModeEnum = ApbsModeEnum.npbe
+    bcfl: BcflEnum = BcflEnum.sdh # Boundary condition flag
     ion_plus_one_conc: float = 0.15
     ion_plus_one_rad: float = 2.0
     ion_plus_two_conc: float = 0.0
@@ -76,7 +75,7 @@ class APBSModel(util.BaseModel):
     ion_minus_two_rad: float = 2.0
     interior_dielectric: float = 2.0
     solvent_dielectric: float = 78.0
-    chgm: str = 'Cubic B-splines'  # Charge disc method for APBS
+    chgm: ChgmEnum = ChgmEnum.spl2  # Charge disc method for APBS
     solvent_radius: float = 1.4
     system_temp: float = 310.0
     # sdens: Specify the number of grid points per square-angstrom to use in Vacc
@@ -84,11 +83,10 @@ class APBSModel(util.BaseModel):
     # correlation between the value used for the Vacc sphere density, the accuracy of the Vacc
     # object, and the APBS calculation time. APBS default value is 10.0.
     sdens: float = 10.0
-    srfm: str = ""
+    srfm: SrfmEnum = SrfmEnum.mol
 
-    @staticmethod
     def template_apbs_values(self):
-        return attrs.asdict(self) # BROKEN, need to re-munge field names
+        return attrs.asdict(self)
 
     @staticmethod
     def template_grid_values(grid_model):

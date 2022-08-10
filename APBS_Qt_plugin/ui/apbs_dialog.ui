@@ -41,14 +41,8 @@ See the &quot;APBS Template&quot; tab to edit how these parameters are passed to
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="1" column="0">
          <layout class="QGridLayout" name="gridLayout">
-          <item row="3" column="1" alignment="Qt::AlignVCenter">
-           <widget class="QLineEdit" name="solvent_r_lineEdit"/>
-          </item>
           <item row="6" column="1" alignment="Qt::AlignVCenter">
            <widget class="QComboBox" name="bc_comboBox"/>
-          </item>
-          <item row="2" column="1" alignment="Qt::AlignVCenter">
-           <widget class="QLineEdit" name="solvent_eps_lineEdit"/>
           </item>
           <item row="1" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
            <widget class="QLabel" name="label_3">
@@ -59,7 +53,7 @@ See the &quot;APBS Template&quot; tab to edit how these parameters are passed to
              <enum>Qt::PlainText</enum>
             </property>
             <property name="buddy">
-             <cstring>protein_eps_lineEdit</cstring>
+             <cstring>protein_eps_doubleSpinBox</cstring>
             </property>
            </widget>
           </item>
@@ -72,7 +66,7 @@ See the &quot;APBS Template&quot; tab to edit how these parameters are passed to
              <enum>Qt::PlainText</enum>
             </property>
             <property name="buddy">
-             <cstring>sys_temp_lineEdit</cstring>
+             <cstring>sys_temp_doubleSpinBox</cstring>
             </property>
            </widget>
           </item>
@@ -86,7 +80,7 @@ See the &quot;APBS Template&quot; tab to edit how these parameters are passed to
              <enum>Qt::PlainText</enum>
             </property>
             <property name="buddy">
-             <cstring>vacc_lineEdit</cstring>
+             <cstring>vacc_doubleSpinBox</cstring>
             </property>
            </widget>
           </item>
@@ -112,15 +106,12 @@ See the &quot;APBS Template&quot; tab to edit how these parameters are passed to
              <enum>Qt::PlainText</enum>
             </property>
             <property name="buddy">
-             <cstring>solvent_r_lineEdit</cstring>
+             <cstring>solvent_r_doubleSpinBox</cstring>
             </property>
            </widget>
           </item>
           <item row="0" column="1" alignment="Qt::AlignVCenter">
            <widget class="QComboBox" name="mode_comboBox"/>
-          </item>
-          <item row="4" column="1" alignment="Qt::AlignVCenter">
-           <widget class="QLineEdit" name="vacc_lineEdit"/>
           </item>
           <item row="0" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
            <widget class="QLabel" name="label_2">
@@ -144,7 +135,7 @@ See the &quot;APBS Template&quot; tab to edit how these parameters are passed to
              <enum>Qt::PlainText</enum>
             </property>
             <property name="buddy">
-             <cstring>solvent_eps_lineEdit</cstring>
+             <cstring>solvent_eps_doubleSpinBox</cstring>
             </property>
            </widget>
           </item>
@@ -163,12 +154,6 @@ See the &quot;APBS Template&quot; tab to edit how these parameters are passed to
              <cstring>charge_disc_comboBox</cstring>
             </property>
            </widget>
-          </item>
-          <item row="5" column="1" alignment="Qt::AlignVCenter">
-           <widget class="QLineEdit" name="sys_temp_lineEdit"/>
-          </item>
-          <item row="1" column="1" alignment="Qt::AlignVCenter">
-           <widget class="QLineEdit" name="protein_eps_lineEdit"/>
           </item>
           <item row="11" column="0" colspan="2">
            <widget class="QTableWidget" name="ions_tableWidget">
@@ -235,6 +220,25 @@ See the &quot;APBS Template&quot; tab to edit how these parameters are passed to
              <cstring>ions_tableWidget</cstring>
             </property>
            </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QDoubleSpinBox" name="sys_temp_doubleSpinBox">
+            <property name="maximum">
+             <double>9999.989999999999782</double>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QDoubleSpinBox" name="vacc_doubleSpinBox"/>
+          </item>
+          <item row="3" column="1">
+           <widget class="QDoubleSpinBox" name="solvent_r_doubleSpinBox"/>
+          </item>
+          <item row="2" column="1">
+           <widget class="QDoubleSpinBox" name="solvent_eps_doubleSpinBox"/>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDoubleSpinBox" name="protein_eps_doubleSpinBox"/>
           </item>
          </layout>
         </item>
