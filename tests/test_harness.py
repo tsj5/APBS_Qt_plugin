@@ -14,8 +14,8 @@ PLUGIN_DIALOG = None
 class App(QtWidgets.QApplication):
     def __init__(self, sys_argv):
         super(App, self).__init__(sys_argv)
+        global PLUGIN_DIALOG
         if PLUGIN_DIALOG is None:
-            import APBS_Qt_plugin.plugin as plugin
             PLUGIN_DIALOG = plugin.PluginController()
         PLUGIN_DIALOG.show()
 
@@ -27,9 +27,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
     try:
-        if PLUGIN_DIALOG is None:
-            PLUGIN_DIALOG = plugin.PluginController()
-        PLUGIN_DIALOG.show()
+        app = App(sys.argv)
+        sys.exit(app.exec_())
 
     # handle uncaught exceptions
     except util.PluginDialogException as exc:

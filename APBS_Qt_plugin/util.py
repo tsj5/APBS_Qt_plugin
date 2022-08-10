@@ -27,44 +27,25 @@ PYQT_QOBJECT = QtCore.QObject
 # PyQt docs state that Signals can't be defined dynamically; this isn't true
 # Adaption of solution from https://stackoverflow.com/a/66266877
 
-def _attr_field_transformer(cls, fields):
-    """Modify field definition process on attrs/dataclass in order to set up
-    signal and signal descriptor. The original field is mapped to `private_name`,
-    while the descriptor is assigned to the original `public_name`.
-
-    See https://www.attrs.org/en/stable/extending.html#automatic-field-transformation-and-modification.
+class PropertyNames(collections.namedtuple(
+    'PropertyNames',
+    ('name', 'signal_name', 'slot_name')
+)):
+    """Use rigid naming conventions, defined in one place, for the naming of
+    auto-generated Signals, Slots and other attributes.
     """
-    new_fields = []
-    for f in fields:
-        if attrs.has(f.type) or issubclass(f.type, PYQT_QOBJECT):
-            # don't create a descriptor/signal for attributes that are other
-            # Models (ie building up Model object through composition.)
-            # currently can't handle this case.
-            continue
-        p = PropertyNames.from_name(f.name)
-        new_fields.append(f.evolve(name=p.private_name))
-    return new_fields
+    __slots__ = ()
 
-def attrs_define(cls=None, **deco_kwargs):
-    deco_kwargs.update({ # enforce default values for attrs class creation
-        "slots": True,
-        "kw_only": True,
-        "field_transformer":_attr_field_transformer
-    })
-    if cls is None:
-        # decorator called without arguments
-        return functools.partial(attrs_define, **deco_kwargs)
-
-    # attrs auto-generates an __init__ method; need to manually ensure that
-    # super() is called.
-    # https://www.attrs.org/en/stable/init.html#hooking-yourself-into-initialization
-    def _pre_init(self):
-        PYQT_QOBJECT.__init__(self)
-    setattr(cls, "__attrs_pre_init__", _pre_init)
-
-    # apply the attrs dataclass decorator, with descriptors and signals assigned
-    # according to _attr_field_transformer()
-    return attrs.define(cls, **deco_kwargs)
+    @classmethod
+    def from_name(cls, name):
+        # the lstrip() is a hack to deal with attribute redefinition on class
+        # inheritance; don't want to auto-generate x, _x, __x, ___x etc.
+        name = name.lstrip('_')
+        return cls(
+            name = name,
+            signal_name = name + '_update',
+            slot_name = 'on_' + name + '_update'
+        )
 
 class MakeNotified:
     """From https://stackoverflow.com/a/66266877.
@@ -112,31 +93,139 @@ class MakeNotified:
 
 _MAKE_NOTIFIED = MakeNotified()
 
-class PropertyNames(collections.namedtuple(
-    'PropertyNames',
-    ('name', 'private_name', 'signal_name', 'slot_name')
-)):
-    """Use rigid naming conventions, defined in one place, for the naming of
-    auto-generated Signals, Slots and other attributes.
+def attr_setter_emit(obj, attr_obj, value):
+    """Emit corresponding Signal when field (attrs Attribute) is set to a new
+    value.
     """
-    __slots__ = ()
+    p = PropertyNames.from_name(attr_obj.name)
+    signal = getattr(obj, p.signal_name)
+    if type(value) in (list, dict):
+        value = _MAKE_NOTIFIED(value, signal)
+        signal.emit(value)
+    else:
+        # coerce from field's type
+        # TODO: case when Signal is a tupe of values?
+        old_val = getattr(obj, attr_obj.name)
+        if old_val != value:
+            obj.wrapped_emit(p.name, value)
+    return value
 
-    @classmethod
-    def from_name(cls, name):
-        # the lstrip() is a hack to deal with attribute redefinition on class
-        # inheritance; don't want to auto-generate x, _x, __x, ___x etc.
-        name = name.lstrip('_')
-        return cls(
-            name = name,
-            private_name = '_' + name,
-            signal_name = name + '_update',
-            slot_name = 'on_' + name + '_update'
-        )
+def _attr_field_transformer(cls, fields):
+    """Insert `attr_setter_emit` into list of methods called when field (attrs
+    Attribute) is set to a new value.
+    """
+    new_fields = []
+    for f in fields:
+        if attrs.has(f.type) or issubclass(f.type, PYQT_QOBJECT):
+            new_fields.append(f) # no-op for fields that are a composition of other Models
+            continue
 
-    @classmethod
-    def from_private_name(cls, private_name):
-        assert private_name.startswith('_')
-        return cls.from_name(private_name)
+        if f.on_setattr:
+            new_setattr = attrs.setters.pipe(
+                attrs.setters.convert,
+                attrs.setters.validate,
+                f.on_setattr,
+                attr_setter_emit
+            )
+        else:
+            new_setattr = attrs.setters.pipe(
+                attrs.setters.convert,
+                attrs.setters.validate,
+                attr_setter_emit
+            )
+        new_fields.append(f.evolve(on_setattr=new_setattr))
+    return new_fields
+
+def attrs_define(cls=None, **deco_kwargs):
+    """Wraps the attrs `define` class decorator to enforce required settings for
+    attrs class creation.
+    """
+    if not deco_kwargs.get('slots', True):
+        # slots = True necessary, otherwise for some reason metaclass isn't picked up
+        raise ValueError("Model classes aren't slots-based, but require slots=True")
+    deco_kwargs['slots'] = True
+
+    if not deco_kwargs.get('kw_only', True):
+        # kw_only = True needed for sane __init__ signature under class inheritance
+        raise ValueError("Model class init must be kwarg-only")
+    deco_kwargs['kw_only'] = True
+
+    if not deco_kwargs.get('init', True):
+        raise ValueError("Define init by inheriting from util.BaseModel")
+    deco_kwargs['init'] = True
+
+    deco_kwargs['field_transformer'] = _attr_field_transformer
+
+    if cls is None:
+        # decorator called without arguments
+        return functools.partial(attrs_define, **deco_kwargs)
+
+    # apply the original attrs dataclass decorator
+    return attrs.define(cls, **deco_kwargs)
+
+_AUTOSIGNAL_TYPE_COERCE = {
+    list: 'QVariantList', dict: 'QVariantMap',
+    pathlib.Path: str, # need to understand typing of signals better
+    enum.Enum: int
+}
+
+class AutoSignalSlotMetaclass(type(PYQT_QOBJECT)):
+    """Metaclass for dynamically associating PyQt Properties and Signals with
+    attrs fields. Based on https://stackoverflow.com/a/66266877.
+    """
+    def __new__(cls, name, bases, attrs_):
+        if '__attrs_attrs__' in attrs_:
+            # with slots=True, we get called twice. First call is before attrs
+            # decorator so we need to pass through; make definitions on second call.
+
+            for f in attrs_['__attrs_attrs__']:
+                signal_type = _AUTOSIGNAL_TYPE_COERCE.get(f.type, f.type)
+                if attrs.has(f.type) or issubclass(f.type, PYQT_QOBJECT):
+                    # don't define new signals/slots for nested Model objects
+                    continue
+
+                p = PropertyNames.from_name(f.name)
+                if p.signal_name not in attrs_:
+                    # auto-generate signal
+                    attrs_[p.signal_name] = PYQT_SIGNAL(signal_type, name=p.signal_name)
+
+                if p.slot_name not in attrs_:
+                    # auto-generate slot. Each slot has to be a unique callable with specific
+                    # signature, so we can't use stuff on PropertyWrapper and instead
+                    # need to define new, separate setter methods as synonyms.
+                    @PYQT_SLOT(signal_type)
+                    def _dummy_slot(self, value):
+                        setattr(self, p.name, value)
+                    attrs_[p.slot_name] = _dummy_slot
+
+        return super(AutoSignalSlotMetaclass, cls).__new__(cls, name, bases, attrs_)
+
+class BaseModel(PYQT_QOBJECT, metaclass = AutoSignalSlotMetaclass):
+    """Base class for our Model classes.
+    """
+    def __attrs_pre_init__(self, *args, **kwargs):
+        super().__init__() # required to call init on QObject
+
+    def wrapped_emit(self, name, value):
+        p = PropertyNames.from_name(name)
+        signal = getattr(self, p.signal_name, None)
+        if signal:
+            signal_type = signal.type
+            if hasattr(value, "coerce_to_signal"):
+                val = value.coerce_to_signal(signal_type)
+            else:
+                val = signal_type(value)
+            signal.emit(val)
+
+    def refresh(self):
+        """Hacky but necessary way to sync up associated Views with the Model. Model
+        needs to be instantiated before it's connect()ed to views, but this means
+        views don't know about inital values of model fields. To fix this, provide
+        a method to manually fire all *_update signals for all model fields.
+        """
+        for f in attrs.fields(type(self)):
+            self.wrapped_emit(f.name, getattr(self, f.name))
+
 
 def connect_signal(obj_w_signal, prop_name, slot):
     p = PropertyNames.from_name(prop_name)
@@ -162,102 +251,6 @@ def biconnect(view, model, model_prop_name):
             connected = True
     if not connected:
         raise AttributeError
-
-class PropertyWrapper(PYQT_PROPERTY):
-    """Wrapper for pyqtProperty which automatically emits signal on field value
-    change.
-    """
-    def __init__(self, type_, name, notify):
-        # NB: pyqtProperty doesn't do anything with .notify; still need to
-        # .emit() the signal manually
-        super(PropertyWrapper, self).__init__(type_, self.getter, self.setter, notify=notify)
-        self.name = name
-        self.signal_type = type_
-
-    @property
-    def private_name(self):
-        p = PropertyNames.from_name(self.name)
-        return p.private_name
-
-    @property
-    def signal_name(self):
-        p = PropertyNames.from_name(self.name)
-        return p.signal_name
-
-    def getter(self, instance):
-        return getattr(instance, self.private_name)
-
-    def setter(self, instance, value):
-        signal = getattr(instance, self.signal_name)
-        if type(value) in (list, dict):
-            value = _MAKE_NOTIFIED(value, signal)
-            signal.emit(value)
-        else:
-            # coerce from field's type
-            coerce_old_val = self.signal_type(getattr(instance, self.private_name))
-            coerce_val = self.signal_type(value)
-            if coerce_old_val != coerce_val:
-                signal.emit(coerce_val) # may be redundant
-        setattr(instance, self.private_name, value)
-
-_AUTOSIGNAL_TYPE_COERCE = {
-    list: 'QVariantList', dict: 'QVariantMap',
-    pathlib.Path: str, # need to understand typing of signals better
-    enum.Enum: int
-}
-
-class AutoSignalSlotMetaclass(type(PYQT_QOBJECT)):
-    """Metaclass for dynamically associating PyQt Properties and Signals with
-    attrs fields.
-    """
-    def __new__(cls, name, bases, attrs_):
-        if '__attrs_attrs__' not in attrs_:
-            # first call, before attrs decorator; ordinary Object behavior
-            return type.__new__(cls, name, bases, attrs_)
-
-        # If we get here, attrs decorator has done its work -- need attrs slots=True!
-        for f in attrs_['__attrs_attrs__']:
-            signal_type = _AUTOSIGNAL_TYPE_COERCE.get(f.type, f.type)
-            if attrs.has(f.type) or issubclass(f.type, PYQT_QOBJECT):
-                # don't define new signals/slots for nested Model objects
-                continue
-            p = PropertyNames.from_private_name(f.name) # _attr_field_transformer remapped names
-            if p.signal_name not in attrs_:
-                # auto-generate signal
-                signal = PYQT_SIGNAL(signal_type, name=p.signal_name)
-                attrs_[p.signal_name] = signal
-                attrs_[p.name] = PropertyWrapper(type_=signal_type, name=p.name, notify=signal)
-
-            if p.slot_name not in attrs_:
-                # auto-generate. Each slot has to be a unique callable, so we
-                # have to define them because we're using a descriptor for attribute
-                # access
-                @PYQT_SLOT(signal_type)
-                def _dummy_slot(self, value):
-                    setattr(self, p.name, value)
-                attrs_[p.slot_name] = _dummy_slot
-
-        # hacky but necessary way to sync up associated Views with the Model. Model
-        # needs to be instantiated before it's connect()ed to views, but this means
-        # views don't know about inital values of model fields. To fix this, provide
-        # a method to manually fire all *_update signals for all model fields.
-        def _refresh(self):
-            cls_ = type(self)
-            for f in attrs.fields(cls_):
-                p = PropertyNames.from_private_name(f.name) # _attr_field_transformer remapped names
-                if hasattr(cls_, p.signal_name):
-                    # signals are class attributes BUT need to call emit() on the instance
-                    value = getattr(self, p.name)
-                    getattr(self, p.signal_name).emit(value)
-        attrs_["refresh"] = _refresh
-
-        return super().__new__(cls, name, bases, attrs_)
-
-
-class BaseModel(PYQT_QOBJECT, metaclass = AutoSignalSlotMetaclass):
-    """Base class for our Model classes.
-    """
-    pass
 
 class BaseController(PYQT_QOBJECT):
     """Base class for our Controller classes.
